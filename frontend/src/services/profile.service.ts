@@ -8,6 +8,11 @@ export const profileService = {
     return response.data;
   },
 
+  getMyProfile: async (): Promise<ApiResponse<{ profile: Profile }>> => {
+    const response = await api.get('/profile');
+    return response.data;
+  },
+
   updateProfile: async (
     data: Partial<Profile>,
     userId?: string
@@ -28,13 +33,18 @@ export const profileService = {
     return response.data;
   },
 
-  uploadDocument: async (data: {
-    name: string;
-    type: string;
-    url: string;
-  }): Promise<ApiResponse<{ document: any }>> => {
-    const response = await api.post('/profile/documents', data);
+  uploadDocument: async (formData: FormData): Promise<ApiResponse<{ document: any }>> => {
+    const response = await api.post('/profile/documents', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
+  },
+
+  downloadDocument: async (documentId: string): Promise<any> => {
+    const response = await api.get(`/profile/documents/${documentId}/download`, {
+      responseType: 'blob',
+    });
+    return response;
   },
 
   deleteDocument: async (

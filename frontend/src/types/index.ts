@@ -125,6 +125,13 @@ export interface LeaveBalance {
 
 export interface ApplyLeaveData {
   leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+// Salary types
+export interface Salary {
   _id: string;
   userId: any;
   basicSalary: number;
@@ -151,14 +158,7 @@ export interface UpdateSalaryData {
   allowances?: number;
   deductions?: number;
   currency?: string;
-  paymentFrequency?: stringing;
-  basicSalary: number;
-  allowances: number;
-  deductions: number;
-  netSalary: number;
-  currency: string;
-  paymentFrequency: string;
-  user?: User;
+  paymentFrequency?: string;
 }
 
 // API Response types

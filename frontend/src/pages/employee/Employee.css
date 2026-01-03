@@ -429,6 +429,46 @@
   color: #64748b;
 }
 
+.dropdown-wrapper {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 160px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #475569;
+  transition: all 0.2s;
+  display: block;
+}
+
+.dropdown-menu button:hover {
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+.dropdown-menu button:not(:last-child) {
+  border-bottom: 1px solid #f1f3f5;
+}
+
 .card-body h3 {
   font-size: 1.125rem;
   font-weight: 600;

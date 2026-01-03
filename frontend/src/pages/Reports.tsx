@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores';
 import { Link } from 'react-router-dom';
 import { 
@@ -6,6 +6,7 @@ import {
   TrendingUp, BarChart3, PieChart, Filter, Briefcase,
   Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
+import { attendanceService, leaveService, salaryService, employeeService } from '../services';
 import './Reports.css';
 
 const Reports = () => {
@@ -13,11 +14,21 @@ const Reports = () => {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
   const [selectedReport, setSelectedReport] = useState<string>('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [generating, setGenerating] = useState(false);
+  const [recentReports, setRecentReports] = useState<any[]>([]);
 
   const handleSignOut = async () => {
     const { signOut } = useAuthStore.getState();
     await signOut();
   };
+
+  useEffect(() => {
+    // Load recent reports from localStorage
+    const saved = localStorage.getItem('recentReports');
+    if (saved) {
+      setRecentReports(JSON.parse(saved));
+    }
+  }, []);
 
   const reportTypes = [
     {
@@ -50,13 +61,125 @@ const Reports = () => {
     }
   ];
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     if (!selectedReport) {
       alert('Please select a report type');
       return;
     }
-    alert(`Generating ${reportTypes.find(r => r.id === selectedReport)?.name}...`);
-    // In real implementation, this would call an API to generate PDF/Excel
+
+    try {
+      setGenerating(true);
+      const reportInfo = reportTypes.find(r => r.id === selectedReport);
+      
+      let data: any = [];
+      let csvContent = '';
+      
+      // Fetch data based on report type
+      switch (selectedReport) {
+        case 'attendance':
+          const attendanceRes = await attendanceService.getAttendance();
+          data = attendanceRes.data.attendance;
+          csvContent = generateAttendanceCSV(data);
+          break;
+        case 'leave':
+          const leaveRes = await leaveService.getAllLeaveRequests();
+          data = leaveRes.data.leaves;
+          csvContent = generateLeaveCSV(data);
+          break;
+        case 'salary':
+          const salaryRes = await salaryService.getAllSalaries({ page: 1, limit: 1000 });
+          data = salaryRes.data.salaries;
+          csvContent = generateSalaryCSV(data);
+          break;
+        case 'employee':
+          const empRes = await employeeService.getEmployees({ page: 1, limit: 1000 });
+          data = empRes.data.employees;
+          csvContent = generateEmployeeCSV(data);
+          break;
+      }
+
+      // Download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${selectedReport}_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Save to recent reports
+      const newReport = {
+        type: reportInfo?.name,
+        date: new Date().toLocaleDateString(),
+        fileName: `${selectedReport}_report_${new Date().toISOString().split('T')[0]}.csv`
+      };
+      const updated = [newReport, ...recentReports.slice(0, 4)];
+      setRecentReports(updated);
+      localStorage.setItem('recentReports', JSON.stringify(updated));
+
+      alert('Report generated successfully!');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to generate report');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const generateAttendanceCSV = (data: any[]) => {
+    let csv = 'Employee Name,Date,Check In,Check Out,Status,Hours Worked\n';
+    data.forEach(record => {
+      csv += `"${record.userId?.profile?.firstName || 'N/A'} ${record.userId?.profile?.lastName || ''}",`;
+      csv += `"${new Date(record.date).toLocaleDateString()}",`;
+      csv += `"${record.checkInTime || 'N/A'}",`;
+      csv += `"${record.checkOutTime || 'N/A'}",`;
+      csv += `"${record.status}",`;
+      csv += `"${record.hoursWorked || 0}"\n`;
+    });
+    return csv;
+  };
+
+  const generateLeaveCSV = (data: any[]) => {
+    let csv = 'Employee Name,Leave Type,Start Date,End Date,Days,Status,Reason\n';
+    data.forEach(leave => {
+      csv += `"${leave.userId?.profile?.firstName || 'N/A'} ${leave.userId?.profile?.lastName || ''}",`;
+      csv += `"${leave.leaveType}",`;
+      csv += `"${new Date(leave.startDate).toLocaleDateString()}",`;
+      csv += `"${new Date(leave.endDate).toLocaleDateString()}",`;
+      csv += `"${leave.totalDays}",`;
+      csv += `"${leave.status}",`;
+      csv += `"${leave.reason}"\n`;
+    });
+    return csv;
+  };
+
+  const generateSalaryCSV = (data: any[]) => {
+    let csv = 'Employee Name,Basic Salary,Allowances,Deductions,Net Salary,Currency,Frequency\n';
+    data.forEach(salary => {
+      csv += `"${salary.userId?.profile?.firstName || 'N/A'} ${salary.userId?.profile?.lastName || ''}",`;
+      csv += `"${salary.basicSalary}",`;
+      csv += `"${salary.allowances}",`;
+      csv += `"${salary.deductions}",`;
+      csv += `"${salary.netSalary}",`;
+      csv += `"${salary.currency}",`;
+      csv += `"${salary.paymentFrequency}"\n`;
+    });
+    return csv;
+  };
+
+  const generateEmployeeCSV = (data: any[]) => {
+    let csv = 'Name,Email,Department,Designation,Join Date,Mobile,Status\n';
+    data.forEach(emp => {
+      csv += `"${emp.employeeName}",`;
+      csv += `"${emp.email}",`;
+      csv += `"${emp.department}",`;
+      csv += `"${emp.designation}",`;
+      csv += `"${new Date(emp.dateOfJoining).toLocaleDateString()}",`;
+      csv += `"${emp.mobile || 'N/A'}",`;
+      csv += `"${emp.status}"\n`;
+    });
+    return csv;
   };
 
   return (
@@ -224,9 +347,13 @@ const Reports = () => {
               </div>
             </div>
 
-            <button className="btn-generate" onClick={handleGenerateReport}>
+            <button 
+              className="btn-generate" 
+              onClick={handleGenerateReport}
+              disabled={generating}
+            >
               <Download size={20} />
-              Generate & Download
+              {generating ? 'Generating...' : 'Generate & Download'}
             </button>
           </div>
         </div>
@@ -259,36 +386,22 @@ const Reports = () => {
         <div className="recent-reports">
           <h2>Recent Reports</h2>
           <div className="reports-list">
-            <div className="report-item">
-              <FileText size={20} />
-              <div className="report-details">
-                <h4>Attendance Report - December 2025</h4>
-                <p>Generated on Dec 31, 2025</p>
+            {recentReports.length > 0 ? (
+              recentReports.map((report, index) => (
+                <div key={index} className="report-item">
+                  <FileText size={20} />
+                  <div className="report-details">
+                    <h4>{report.type}</h4>
+                    <p>Generated on {report.date}</p>
+                  </div>
+                  <span className="file-name">{report.fileName}</span>
+                </div>
+              ))
+            ) : (
+              <div className="empty-recent">
+                <p>No recent reports. Generate a report to get started.</p>
               </div>
-              <button className="btn-download">
-                <Download size={18} />
-              </button>
-            </div>
-            <div className="report-item">
-              <FileText size={20} />
-              <div className="report-details">
-                <h4>Salary Slips - December 2025</h4>
-                <p>Generated on Dec 30, 2025</p>
-              </div>
-              <button className="btn-download">
-                <Download size={18} />
-              </button>
-            </div>
-            <div className="report-item">
-              <FileText size={20} />
-              <div className="report-details">
-                <h4>Leave Summary - Q4 2025</h4>
-                <p>Generated on Dec 28, 2025</p>
-              </div>
-              <button className="btn-download">
-                <Download size={18} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>

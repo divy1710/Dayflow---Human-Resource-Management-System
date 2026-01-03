@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../stores';
 import { salaryService, userService } from '../../services';
-import type { Salary, CreateSalaryData, UpdateSalaryData } from '../../types';
+import type { Salary, CreateSalaryData, UpdateSalaryData, User } from '../../types';
 import { 
   DollarSign, Plus, X, Search, Edit, Trash2, ChevronLeft, ChevronRight,
-  User, FileText, TrendingUp, Users, Briefcase, Calendar,
+  User as UserIcon, FileText, TrendingUp, Users, Briefcase, Calendar,
   Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,6 +15,7 @@ const SalaryManagement = () => {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
   
   const [salaries, setSalaries] = useState<Salary[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSalary, setEditingSalary] = useState<Salary | null>(null);
@@ -37,11 +38,7 @@ const SalaryManagement = () => {
     paymentFrequency: 'MONTHLY'
   });
 
-  useEffect(() => {
-    fetchSalaries();
-  }, [currentPage, searchTerm]);
-
-  const fetchSalaries = async () => {
+  const fetchSalaries = useCallback(async () => {
     try {
       setLoading(true);
       const response = await salaryService.getAllSalaries({
@@ -55,21 +52,51 @@ const SalaryManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, itemsPerPage]);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await userService.getAllUsers({ limit: 1000 });
+      setUsers(response.data.users);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSalaries();
+    fetchUsers();
+  }, [fetchSalaries, fetchUsers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!editingSalary && !(formData as CreateSalaryData).userId) {
+      alert('Please select an employee');
+      return;
+    }
+    
+    if (!formData.basicSalary || formData.basicSalary <= 0) {
+      alert('Basic salary must be greater than 0');
+      return;
+    }
+    
     try {
       if (editingSalary) {
         await salaryService.updateSalary(editingSalary._id, formData as UpdateSalaryData);
+        alert('Salary updated successfully!');
       } else {
         await salaryService.createSalary(formData as CreateSalaryData);
+        alert('Salary created successfully!');
       }
       setShowModal(false);
       resetForm();
       fetchSalaries();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to save salary');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to save salary';
+      console.error('Salary save error:', error);
+      alert(errorMsg);
     }
   };
 
@@ -90,8 +117,9 @@ const SalaryManagement = () => {
       try {
         await salaryService.deleteSalary(id);
         fetchSalaries();
-      } catch (error: any) {
-        alert(error.response?.data?.message || 'Failed to delete salary');
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Failed to delete salary';
+        alert(errorMsg);
       }
     }
   };
@@ -195,7 +223,7 @@ const SalaryManagement = () => {
             <span>Leave</span>
           </Link>
           <Link to="/profile" className="nav-item">
-            <User size={18} />
+            <UserIcon size={18} />
             <span>Profile</span>
           </Link>
           <Link to="/reports" className="nav-item">
@@ -219,10 +247,10 @@ const SalaryManagement = () => {
         <div className="sidebar-user">
           <div className="user-info">
             <div className="user-avatar-small">
-              {user?.profile?.firstName?.charAt(0) || user?.firstName?.charAt(0) || 'A'}
+              {user?.profile?.firstName?.charAt(0) || 'A'}
             </div>
             <div className="user-details">
-              <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
+              <p className="user-name">{user?.profile?.firstName || 'Admin'}</p>
               <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
             </div>
           </div>
@@ -398,15 +426,20 @@ const SalaryManagement = () => {
             <form onSubmit={handleSubmit} className="modal-form">
               {!editingSalary && (
                 <div className="form-group">
-                  <label>Employee ID *</label>
-                  <input
-                    type="text"
+                  <label>Select Employee *</label>
+                  <select
                     value={(formData as CreateSalaryData).userId || ''}
                     onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                    placeholder="Enter User ID"
                     required
-                  />
-                  <small>Enter the MongoDB User ID of the employee</small>
+                  >
+                    <option value="">-- Select an employee --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.profile?.firstName || 'N/A'} {u.profile?.lastName || ''} ({u.email})
+                      </option>
+                    ))}
+                  </select>
+                  <small>Select the employee to assign salary</small>
                 </div>
               )}
 

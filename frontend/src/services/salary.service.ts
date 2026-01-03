@@ -51,4 +51,9 @@ export const salaryService = {
     const response = await api.put(`/salary/${userId}`, data);
     return response.data;
   },
+
+  deleteSalary: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await api.delete(`/salary/${id}`);
+    return response.data;
+  },
 };

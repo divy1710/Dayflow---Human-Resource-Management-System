@@ -14,6 +14,7 @@ const EmployeeManagement = () => {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     department: '',
     status: '',
@@ -364,9 +365,24 @@ const EmployeeManagement = () => {
                     <div className="employee-avatar">
                       {getInitials(employee.employeeName)}
                     </div>
-                    <button className="more-btn">
-                      <MoreVertical size={18} />
-                    </button>
+                    <div className="dropdown-wrapper">
+                      <button 
+                        className="more-btn"
+                        onClick={() => setOpenDropdown(openDropdown === employee._id ? null : employee._id)}
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+                      {openDropdown === employee._id && (
+                        <div className="dropdown-menu">
+                          <button onClick={() => { handleEdit(employee); setOpenDropdown(null); }}>
+                            Edit Profile
+                          </button>
+                          <button onClick={() => { handleDelete(employee._id); setOpenDropdown(null); }}>
+                            Delete Employee
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="card-body">
                     <h3>{employee.employeeName}</h3>

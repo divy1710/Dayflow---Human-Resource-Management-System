@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../stores';
 import { profileService, salaryService } from '../../services';
 import type { Profile, Salary } from '../../types';
@@ -17,6 +17,8 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<Partial<Profile>>({});
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSignOut = async () => {
     const { signOut } = useAuthStore.getState();
@@ -76,6 +78,57 @@ const ProfilePage = () => {
       style: 'currency',
       currency: currency
     }).format(amount);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingFile(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', 'GENERAL');
+
+      await profileService.uploadDocument(formData);
+      await fetchProfileData();
+      alert('Document uploaded successfully');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to upload document');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDownloadDocument = async (documentId: string, filename: string) => {
+    try {
+      const response = await profileService.downloadDocument(documentId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to download document');
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+    
+    try {
+      await profileService.deleteDocument(documentId);
+      await fetchProfileData();
+      alert('Document deleted successfully');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to delete document');
+    }
   };
 
   if (loading) {
@@ -356,19 +409,49 @@ const ProfilePage = () => {
 
           {/* Documents */}
           <div className="section">
-            <h3 className="section-title">Documents</h3>
+            <div className="section-header">
+              <h3 className="section-title">Documents</h3>
+              <button 
+                className="btn-upload" 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+              >
+                <Upload size={16} />
+                {uploadingFile ? 'Uploading...' : 'Upload Document'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              />
+            </div>
             {profile?.documents && profile.documents.length > 0 ? (
               <div className="documents-list">
-                {profile.documents.map((doc: any, index: number) => (
-                  <div key={index} className="document-item">
+                {profile.documents.map((doc: any) => (
+                  <div key={doc.id} className="document-item">
                     <FileText size={20} />
                     <div className="document-info">
-                      <p className="document-name">{doc.name}</p>
-                      <p className="document-type">{doc.type}</p>
+                      <p className="document-name">{doc.filename || doc.name}</p>
+                      <p className="document-type">{doc.type || doc.documentType}</p>
                     </div>
-                    <button className="btn-icon" title="Download">
-                      <Download size={18} />
-                    </button>
+                    <div className="document-actions">
+                      <button 
+                        className="btn-icon" 
+                        title="Download"
+                        onClick={() => handleDownloadDocument(doc.id, doc.filename || doc.name)}
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button 
+                        className="btn-icon delete" 
+                        title="Delete"
+                        onClick={() => handleDeleteDocument(doc.id)}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -376,6 +459,7 @@ const ProfilePage = () => {
               <div className="empty-documents">
                 <FileText size={48} />
                 <p>No documents uploaded yet</p>
+                <p className="hint">Upload your documents like ID, certificates, etc.</p>
               </div>
             )}
           </div>
