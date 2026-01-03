@@ -1,3 +1,6 @@
+/* Import shared layout styles */
+@import '../../components/Layout.css';
+
 .salary-container {
   display: flex;
   min-height: 100vh;

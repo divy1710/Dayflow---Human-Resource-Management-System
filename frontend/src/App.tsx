@@ -3,15 +3,23 @@ import { useAuthStore } from './stores';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import Dashboard from './pages/DashboardNew';
+import EmployeeDashboard from './pages/EmployeeDashboard';
 import EmployeeManagement from './pages/employee/EmployeeManagement';
 import LeaveManagement from './pages/leave/LeaveManagement';
 import AttendanceManagement from './pages/attendance/AttendanceManagement';
 import ProfilePage from './pages/profile/ProfilePage';
 import SalaryManagement from './pages/salary/SalaryManagement';
+import Reports from './pages/Reports';
 import './App.css';
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+
+  const getDashboard = () => {
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
+    return isAdmin ? <Dashboard /> : <EmployeeDashboard />;
+  };
 
   return (
     <Router>
@@ -26,7 +34,7 @@ function App() {
         />
         <Route 
           path="/dashboard" 
-          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
+          element={getDashboard()} 
         />
         <Route 
           path="/employees" 
@@ -47,6 +55,10 @@ function App() {
         <Route 
           path="/salary" 
           element={isAuthenticated ? <SalaryManagement /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/reports" 
+          element={isAuthenticated ? <Reports /> : <Navigate to="/login" />} 
         />
         <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
       </Routes>

@@ -1,3 +1,6 @@
+/* Import shared layout styles */
+@import '../../components/Layout.css';
+
 /* Employee Page Layout */
 .employee-page {
   display: flex;

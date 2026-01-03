@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { employeeService } from '../../services/employee.service';
 import type { Employee, CreateEmployeeData } from '../../services/employee.service';
-import { UserPlus, Search, Grid, List, MoreVertical, Mail, Phone, X, LogOut } from 'lucide-react';
+import { UserPlus, Search, Grid, List, MoreVertical, Mail, Phone, X, LogOut, Users, Briefcase, Calendar, DollarSign, Settings, HelpCircle, FileText } from 'lucide-react';
 import { useAuthStore } from '../../stores';
+import { Link } from 'react-router-dom';
 import './Employee.css';
 
 const EmployeeManagement = () => {

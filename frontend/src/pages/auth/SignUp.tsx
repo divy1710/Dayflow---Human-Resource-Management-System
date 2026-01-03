@@ -18,6 +18,7 @@ const SignUp = () => {
     lastName: '',
     email: '',
     phone: '',
+    role: 'EMPLOYEE',
     password: '',
     confirmPassword: '',
   });
@@ -180,6 +181,7 @@ const SignUp = () => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
+        role: formData.role as 'ADMIN' | 'HR' | 'EMPLOYEE',
       });
       navigate('/dashboard');
     } catch {
@@ -283,6 +285,22 @@ const SignUp = () => {
                   onChange={handleChange}
                   placeholder="Enter your phone number"
                 />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="role">Role</label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  required
+                  className="role-select"
+                >
+                  <option value="EMPLOYEE">Employee</option>
+                  <option value="HR">HR</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
               </div>
 
               <div className="form-group">
