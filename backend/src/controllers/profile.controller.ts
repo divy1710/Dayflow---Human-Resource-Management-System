@@ -87,7 +87,10 @@ export const updateProfile = async (
       country, 
       zipCode, 
       dateOfBirth,
-      employmentType 
+      employmentType,
+      department,
+      designation,
+      joiningDate
     };
 
     // Remove undefined values
@@ -117,7 +120,7 @@ export const updateProfile = async (
       await Employee.findOneAndUpdate(
         { userId },
         employeeUpdateData,
-        { new: true }
+        { new: true, upsert: true }
       );
     }
 

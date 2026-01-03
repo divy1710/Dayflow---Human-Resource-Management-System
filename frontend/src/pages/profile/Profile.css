@@ -500,16 +500,36 @@
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   font-size: 14px;
-  transition: all 0.2s;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s;
   font-family: inherit;
   background: white;
   cursor: pointer;
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 12px;
+  padding-right: 40px;
+}
+
+.info-item select:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
 }
 
 .info-item select:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.info-item select option {
+  padding: 12px;
+  font-weight: 500;
+  color: #1e293b;
 }
 
 .status-badge {
@@ -748,41 +768,42 @@
 }
 
 .btn-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
-  background: rgba(102, 126, 234, 0.1);
-  border: 1.5px solid rgba(102, 126, 234, 0.2);
-  border-radius: 8px;
+  background: #f0f4ff;
+  border: 2px solid #d1d9f5;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: #667eea;
+  transition: all 0.3s ease;
+  color: #4c6fff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .btn-icon:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  border-color: #4c6fff;
+  color: #3451e6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 111, 255, 0.25);
+  background: #e3e9ff;
 }
 
 .btn-icon.delete {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
 }
 
 .btn-icon.delete:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  border-color: #dc2626;
+  color: #b91c1c;
+  background: #fee2e2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
 }
 
 .empty-documents {

@@ -27,6 +27,8 @@ export interface Profile {
   designation?: string;
   joiningDate?: string;
   employmentType?: string;
+  site?: string;
+  status?: string;
   documents?: Document[];
 }
 

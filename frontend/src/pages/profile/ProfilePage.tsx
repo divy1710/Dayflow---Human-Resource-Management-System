@@ -111,6 +111,11 @@ const ProfilePage = () => {
     });
   };
 
+  const formatEmploymentType = (type?: string) => {
+    if (!type) return '-';
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -504,11 +509,11 @@ const ProfilePage = () => {
                 {isEditing ? (
                   <input
                     type="text"
-                    value={(formData as any).site || ''}
-                    onChange={(e) => setFormData({ ...formData, site: e.target.value } as any)}
+                    value={formData.site || ''}
+                    onChange={(e) => setFormData({ ...formData, site: e.target.value })}
                   />
                 ) : (
-                  <p>{(profile as any)?.site || '-'}</p>
+                  <p>{profile?.site || '-'}</p>
                 )}
               </div>
               <div className="info-item">
@@ -525,13 +530,13 @@ const ProfilePage = () => {
                     <option value="INTERN">Intern</option>
                   </select>
                 ) : (
-                  <p>{profile?.employmentType || '-'}</p>
+                  <p>{formatEmploymentType(profile?.employmentType)}</p>
                 )}
               </div>
               <div className="info-item">
                 <label>Status</label>
-                <p className={`status-badge ${((profile as any)?.status || 'Active').toLowerCase()}`}>
-                  {(profile as any)?.status || 'Active'}
+                <p className={`status-badge ${(profile?.status || 'Active').toLowerCase()}`}>
+                  {profile?.status || 'Active'}
                 </p>
               </div>
             </div>
@@ -601,14 +606,14 @@ const ProfilePage = () => {
                         title="Download"
                         onClick={() => handleDownloadDocument(doc._id, doc.filename || doc.name)}
                       >
-                        <Download size={18} />
+                        <Download size={20} />
                       </button>
                       <button 
                         className="btn-icon delete" 
                         title="Delete"
                         onClick={() => handleDeleteDocument(doc._id)}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </div>
