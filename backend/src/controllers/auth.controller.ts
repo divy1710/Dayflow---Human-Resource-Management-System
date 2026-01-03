@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import { Profile } from '../models/index.js';
+import { Otp } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
@@ -19,6 +20,16 @@ export const signUp = async (
 ) => {
   try {
     const { employeeId, email, password, role, firstName, lastName } = req.body;
+
+    // Check if email is verified via OTP
+    const otpRecord = await Otp.findOne({
+      email: email.toLowerCase(),
+      verified: true,
+    });
+
+    if (!otpRecord) {
+      throw new AppError('Please verify your email first', 400);
+    }
 
     // Check if user exists
     const existingUser = await User.findOne({

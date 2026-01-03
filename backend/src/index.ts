@@ -10,6 +10,7 @@ import profileRoutes from './routes/profile.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
 import leaveRoutes from './routes/leave.routes.js';
 import salaryRoutes from './routes/salary.routes.js';
+import otpRoutes from './routes/otp.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leave', leaveRoutes);
 app.use('/api/salary', salaryRoutes);
+app.use('/api/otp', otpRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

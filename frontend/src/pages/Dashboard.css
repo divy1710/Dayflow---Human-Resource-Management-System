@@ -1,0 +1,127 @@
+.dashboard-container {
+  min-height: 100vh;
+  background-color: #1a1a2e;
+}
+
+.dashboard-header {
+  background-color: #16213e;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #2d3748;
+}
+
+.header-logo span {
+  color: #a855f7;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-user span {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.dashboard-main {
+  padding: 40px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-main h1 {
+  color: #e2e8f0;
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.dashboard-subtitle {
+  color: #a0aec0;
+  font-size: 1rem;
+  margin-bottom: 40px;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.dashboard-card {
+  background-color: #16213e;
+  border-radius: 12px;
+  padding: 32px;
+  border: 1px solid #2d3748;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard-card:hover {
+  border-color: #a855f7;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.dashboard-card h3 {
+  color: #e2e8f0;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.dashboard-card p {
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 16px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dashboard-main {
+    padding: 24px 16px;
+  }
+
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+}

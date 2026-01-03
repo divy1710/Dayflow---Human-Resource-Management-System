@@ -4,3 +4,4 @@ export { leaveService } from './leave.service';
 export { profileService } from './profile.service';
 export { salaryService } from './salary.service';
 export { userService } from './user.service';
+export { otpService } from './otp.service';
