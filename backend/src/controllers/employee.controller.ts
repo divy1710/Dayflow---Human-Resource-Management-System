@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { Employee } from '../models/employee.model';
+import { User } from '../models/user.model';
 
 export const createEmployee = async (req: Request, res: Response) => {
   try {
@@ -23,8 +25,33 @@ export const createEmployee = async (req: Request, res: Response) => {
       }
     }
 
+    // Check if user with this email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        message: 'User with this email already exists',
+      });
+    }
+
     // Create new employee
     const employee = new Employee(req.body);
+    await employee.save();
+
+    // Create user account with default password
+    const defaultPassword = '12345678';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    const user = new User({
+      employeeId: tradeId,
+      email: email,
+      password: hashedPassword,
+      role: 'EMPLOYEE',
+      isVerified: true,
+    });
+    await user.save();
+
+    // Link user to employee
+    employee.userId = user._id;
     await employee.save();
 
     res.status(201).json({
