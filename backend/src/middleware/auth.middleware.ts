@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import prisma from '../lib/prisma.js';
+import { User } from '../models/index.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -27,16 +27,18 @@ export const authenticate = async (
       userId: string;
     };
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, employeeId: true },
-    });
+    const user = await User.findById(decoded.userId).select('_id email role employeeId');
 
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
-    req.user = user;
+    req.user = {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      employeeId: user.employeeId,
+    };
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid token' });

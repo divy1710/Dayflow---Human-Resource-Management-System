@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import prisma from '../lib/prisma.js';
+import { User, Profile } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
@@ -10,43 +10,47 @@ export const getAllUsers = async (
 ) => {
   try {
     const { page = 1, limit = 10, search, role } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = {};
+    const query: any = {};
+
+    if (role) {
+      query.role = role;
+    }
 
     if (search) {
-      where.OR = [
-        { email: { contains: search as string, mode: 'insensitive' } },
-        { employeeId: { contains: search as string, mode: 'insensitive' } },
-        { profile: { firstName: { contains: search as string, mode: 'insensitive' } } },
-        { profile: { lastName: { contains: search as string, mode: 'insensitive' } } },
+      query.$or = [
+        { email: { $regex: search, $options: 'i' } },
+        { employeeId: { $regex: search, $options: 'i' } },
       ];
     }
 
-    if (role) {
-      where.role = role;
-    }
+    const users = await User.find(query)
+      .select('-password')
+      .skip(skip)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
 
-    const users = await prisma.user.findMany({
-      where,
-      include: { profile: true },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-      orderBy: { createdAt: 'desc' },
-    });
+    // Get profiles for all users
+    const userIds = users.map(u => u._id);
+    const profiles = await Profile.find({ userId: { $in: userIds } });
+    const profileMap = new Map(profiles.map(p => [p.userId.toString(), p]));
 
-    const total = await prisma.user.count({ where });
+    const usersWithProfiles = users.map(user => ({
+      id: user._id,
+      employeeId: user.employeeId,
+      email: user.email,
+      role: user.role,
+      profile: profileMap.get(user._id.toString()) || null,
+      createdAt: user.createdAt,
+    }));
+
+    const total = await User.countDocuments(query);
 
     res.json({
       status: 'success',
       data: {
-        users: users.map((user) => ({
-          id: user.id,
-          employeeId: user.employeeId,
-          email: user.email,
-          role: user.role,
-          profile: user.profile,
-          createdAt: user.createdAt,
-        })),
+        users: usersWithProfiles,
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -73,24 +77,23 @@ export const getUserById = async (
       throw new AppError('Access denied', 403);
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: { profile: true },
-    });
+    const user = await User.findById(id).select('-password');
 
     if (!user) {
       throw new AppError('User not found', 404);
     }
 
+    const profile = await Profile.findOne({ userId: user._id });
+
     res.json({
       status: 'success',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           employeeId: user.employeeId,
           email: user.email,
           role: user.role,
-          profile: user.profile,
+          profile,
         },
       },
     });
@@ -118,21 +121,27 @@ export const updateUser = async (
       throw new AppError('Access denied', 403);
     }
 
-    const user = await prisma.user.update({
-      where: { id },
-      data: { role },
-      include: { profile: true },
-    });
+    const user = await User.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const profile = await Profile.findOne({ userId: user._id });
 
     res.json({
       status: 'success',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           employeeId: user.employeeId,
           email: user.email,
           role: user.role,
-          profile: user.profile,
+          profile,
         },
       },
     });
@@ -149,7 +158,8 @@ export const deleteUser = async (
   try {
     const { id } = req.params;
 
-    await prisma.user.delete({ where: { id } });
+    await User.findByIdAndDelete(id);
+    await Profile.findOneAndDelete({ userId: id });
 
     res.json({ status: 'success', message: 'User deleted successfully' });
   } catch (error) {

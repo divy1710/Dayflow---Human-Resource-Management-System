@@ -1,7 +1,8 @@
 import { Response, NextFunction } from 'express';
-import prisma from '../lib/prisma.js';
+import { Profile } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
+import mongoose from 'mongoose';
 
 export const getProfile = async (
   req: AuthRequest,
@@ -16,10 +17,7 @@ export const getProfile = async (
       throw new AppError('Access denied', 403);
     }
 
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-      include: { documents: true },
-    });
+    const profile = await Profile.findOne({ userId });
 
     if (!profile) {
       throw new AppError('Profile not found', 404);
@@ -61,11 +59,11 @@ export const updateProfile = async (
       employmentType,
     } = req.body;
 
-    // Fields that only admin can update
-    const adminOnlyFields = { department, designation, joiningDate, employmentType };
-    
     // Fields that employees can update
-    const employeeFields = { firstName, lastName, phone, address, city, state, country, zipCode, dateOfBirth };
+    const employeeFields: any = { firstName, lastName, phone, address, city, state, country, zipCode, dateOfBirth };
+    
+    // Fields that only admin can update
+    const adminOnlyFields: any = { department, designation, joiningDate, employmentType };
 
     const updateData = isAdmin 
       ? { ...employeeFields, ...adminOnlyFields }
@@ -73,14 +71,18 @@ export const updateProfile = async (
 
     // Remove undefined values
     Object.keys(updateData).forEach(
-      (key) => updateData[key as keyof typeof updateData] === undefined && delete updateData[key as keyof typeof updateData]
+      (key) => updateData[key] === undefined && delete updateData[key]
     );
 
-    const profile = await prisma.profile.update({
-      where: { userId },
-      data: updateData,
-      include: { documents: true },
-    });
+    const profile = await Profile.findOneAndUpdate(
+      { userId },
+      updateData,
+      { new: true }
+    );
+
+    if (!profile) {
+      throw new AppError('Profile not found', 404);
+    }
 
     res.json({ status: 'success', data: { profile } });
   } catch (error) {
@@ -94,13 +96,17 @@ export const uploadProfilePicture = async (
   next: NextFunction
 ) => {
   try {
-    // TODO: Implement file upload with multer
     const { profilePicture } = req.body;
 
-    const profile = await prisma.profile.update({
-      where: { userId: req.user!.id },
-      data: { profilePicture },
-    });
+    const profile = await Profile.findOneAndUpdate(
+      { userId: req.user!.id },
+      { profilePicture },
+      { new: true }
+    );
+
+    if (!profile) {
+      throw new AppError('Profile not found', 404);
+    }
 
     res.json({ status: 'success', data: { profile } });
   } catch (error) {
@@ -116,22 +122,22 @@ export const uploadDocument = async (
   try {
     const { name, type, url } = req.body;
 
-    const profile = await prisma.profile.findUnique({
-      where: { userId: req.user!.id },
-    });
+    const profile = await Profile.findOne({ userId: req.user!.id });
 
     if (!profile) {
       throw new AppError('Profile not found', 404);
     }
 
-    const document = await prisma.document.create({
-      data: {
-        profileId: profile.id,
-        name,
-        type,
-        url,
-      },
-    });
+    const document = {
+      _id: new mongoose.Types.ObjectId(),
+      name,
+      type,
+      url,
+      createdAt: new Date(),
+    };
+
+    profile.documents.push(document);
+    await profile.save();
 
     res.status(201).json({ status: 'success', data: { document } });
   } catch (error) {
@@ -147,24 +153,22 @@ export const deleteDocument = async (
   try {
     const { documentId } = req.params;
 
-    const document = await prisma.document.findUnique({
-      where: { id: documentId },
-      include: { profile: true },
-    });
+    const profile = await Profile.findOne({ userId: req.user!.id });
 
-    if (!document) {
+    if (!profile) {
+      throw new AppError('Profile not found', 404);
+    }
+
+    const docIndex = profile.documents.findIndex(
+      (doc) => doc._id?.toString() === documentId
+    );
+
+    if (docIndex === -1) {
       throw new AppError('Document not found', 404);
     }
 
-    // Check if user owns this document or is admin
-    if (
-      document.profile.userId !== req.user!.id &&
-      req.user!.role === 'EMPLOYEE'
-    ) {
-      throw new AppError('Access denied', 403);
-    }
-
-    await prisma.document.delete({ where: { id: documentId } });
+    profile.documents.splice(docIndex, 1);
+    await profile.save();
 
     res.json({ status: 'success', message: 'Document deleted successfully' });
   } catch (error) {

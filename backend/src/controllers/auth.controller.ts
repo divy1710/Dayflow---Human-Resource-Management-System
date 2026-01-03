@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../lib/prisma.js';
+import { User } from '../models/index.js';
+import { Profile } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
@@ -20,10 +21,8 @@ export const signUp = async (
     const { employeeId, email, password, role, firstName, lastName } = req.body;
 
     // Check if user exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { employeeId }],
-      },
+    const existingUser = await User.findOne({
+      $or: [{ email }, { employeeId }],
     });
 
     if (existingUser) {
@@ -33,26 +32,22 @@ export const signUp = async (
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user with profile
-    const user = await prisma.user.create({
-      data: {
-        employeeId,
-        email,
-        password: hashedPassword,
-        role: role || 'EMPLOYEE',
-        profile: {
-          create: {
-            firstName,
-            lastName,
-          },
-        },
-      },
-      include: {
-        profile: true,
-      },
+    // Create user
+    const user = await User.create({
+      employeeId,
+      email,
+      password: hashedPassword,
+      role: role || 'EMPLOYEE',
     });
 
-    const token = generateToken(user.id);
+    // Create profile
+    const profile = await Profile.create({
+      userId: user._id,
+      firstName,
+      lastName,
+    });
+
+    const token = generateToken(user._id.toString());
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -65,11 +60,11 @@ export const signUp = async (
       status: 'success',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           employeeId: user.employeeId,
           email: user.email,
           role: user.role,
-          profile: user.profile,
+          profile,
         },
         token,
       },
@@ -87,16 +82,15 @@ export const signIn = async (
   try {
     const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: { profile: true },
-    });
+    const user = await User.findOne({ email });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new AppError('Invalid email or password', 401);
     }
 
-    const token = generateToken(user.id);
+    const profile = await Profile.findOne({ userId: user._id });
+
+    const token = generateToken(user._id.toString());
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -109,11 +103,11 @@ export const signIn = async (
       status: 'success',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           employeeId: user.employeeId,
           email: user.email,
           role: user.role,
-          profile: user.profile,
+          profile,
         },
         token,
       },
@@ -138,24 +132,23 @@ export const getMe = async (
   next: NextFunction
 ) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      include: { profile: true },
-    });
+    const user = await User.findById(req.user!.id).select('-password');
 
     if (!user) {
       throw new AppError('User not found', 404);
     }
 
+    const profile = await Profile.findOne({ userId: user._id });
+
     res.json({
       status: 'success',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           employeeId: user.employeeId,
           email: user.email,
           role: user.role,
-          profile: user.profile,
+          profile,
         },
       },
     });

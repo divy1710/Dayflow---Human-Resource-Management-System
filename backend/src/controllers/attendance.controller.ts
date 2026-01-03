@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import prisma from '../lib/prisma.js';
+import { Attendance, Profile } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
@@ -13,26 +13,20 @@ export const checkIn = async (
     today.setHours(0, 0, 0, 0);
 
     // Check if already checked in today
-    const existing = await prisma.attendance.findUnique({
-      where: {
-        userId_date: {
-          userId: req.user!.id,
-          date: today,
-        },
-      },
+    const existing = await Attendance.findOne({
+      userId: req.user!.id,
+      date: today,
     });
 
     if (existing) {
       throw new AppError('Already checked in today', 400);
     }
 
-    const attendance = await prisma.attendance.create({
-      data: {
-        userId: req.user!.id,
-        date: today,
-        checkIn: new Date(),
-        status: 'PRESENT',
-      },
+    const attendance = await Attendance.create({
+      userId: req.user!.id,
+      date: today,
+      checkIn: new Date(),
+      status: 'PRESENT',
     });
 
     res.status(201).json({ status: 'success', data: { attendance } });
@@ -50,13 +44,9 @@ export const checkOut = async (
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const attendance = await prisma.attendance.findUnique({
-      where: {
-        userId_date: {
-          userId: req.user!.id,
-          date: today,
-        },
-      },
+    const attendance = await Attendance.findOne({
+      userId: req.user!.id,
+      date: today,
     });
 
     if (!attendance) {
@@ -72,16 +62,12 @@ export const checkOut = async (
       ? (checkOutTime.getTime() - attendance.checkIn.getTime()) / (1000 * 60 * 60)
       : 0;
 
-    const updated = await prisma.attendance.update({
-      where: { id: attendance.id },
-      data: {
-        checkOut: checkOutTime,
-        workHours: Math.round(workHours * 100) / 100,
-        status: workHours < 4 ? 'HALF_DAY' : 'PRESENT',
-      },
-    });
+    attendance.checkOut = checkOutTime;
+    attendance.workHours = Math.round(workHours * 100) / 100;
+    attendance.status = workHours < 4 ? 'HALF_DAY' : 'PRESENT';
+    await attendance.save();
 
-    res.json({ status: 'success', data: { attendance: updated } });
+    res.json({ status: 'success', data: { attendance } });
   } catch (error) {
     next(error);
   }
@@ -94,24 +80,23 @@ export const getMyAttendance = async (
 ) => {
   try {
     const { startDate, endDate, page = 1, limit = 31 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = { userId: req.user!.id };
+    const query: any = { userId: req.user!.id };
 
     if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate as string),
-        lte: new Date(endDate as string),
+      query.date = {
+        $gte: new Date(startDate as string),
+        $lte: new Date(endDate as string),
       };
     }
 
-    const attendances = await prisma.attendance.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-    });
+    const attendances = await Attendance.find(query)
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(Number(limit));
 
-    const total = await prisma.attendance.count({ where });
+    const total = await Attendance.countDocuments(query);
 
     res.json({
       status: 'success',
@@ -137,46 +122,57 @@ export const getAllAttendance = async (
 ) => {
   try {
     const { date, startDate, endDate, userId, status, page = 1, limit = 50 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = {};
+    const query: any = {};
 
     if (date) {
       const queryDate = new Date(date as string);
       queryDate.setHours(0, 0, 0, 0);
-      where.date = queryDate;
+      query.date = queryDate;
     } else if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate as string),
-        lte: new Date(endDate as string),
+      query.date = {
+        $gte: new Date(startDate as string),
+        $lte: new Date(endDate as string),
       };
     }
 
     if (userId) {
-      where.userId = userId;
+      query.userId = userId;
     }
 
     if (status) {
-      where.status = status;
+      query.status = status;
     }
 
-    const attendances = await prisma.attendance.findMany({
-      where,
-      include: {
-        user: {
-          include: { profile: true },
-        },
-      },
-      orderBy: { date: 'desc' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-    });
+    const attendances = await Attendance.find(query)
+      .populate({
+        path: 'userId',
+        select: '-password',
+      })
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(Number(limit));
 
-    const total = await prisma.attendance.count({ where });
+    // Get profiles for users
+    const userIds = attendances.map(a => a.userId);
+    const profiles = await Profile.find({ userId: { $in: userIds } });
+    const profileMap = new Map(profiles.map(p => [p.userId.toString(), p]));
+
+    const attendancesWithProfiles = attendances.map(att => ({
+      ...att.toObject(),
+      user: {
+        ...att.userId,
+        profile: profileMap.get((att.userId as any)._id?.toString()) || null,
+      },
+    }));
+
+    const total = await Attendance.countDocuments(query);
 
     res.json({
       status: 'success',
       data: {
-        attendances,
+        attendances: attendancesWithProfiles,
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -199,19 +195,16 @@ export const getAttendanceByUser = async (
     const { userId } = req.params;
     const { startDate, endDate } = req.query;
 
-    const where: any = { userId };
+    const query: any = { userId };
 
     if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate as string),
-        lte: new Date(endDate as string),
+      query.date = {
+        $gte: new Date(startDate as string),
+        $lte: new Date(endDate as string),
       };
     }
 
-    const attendances = await prisma.attendance.findMany({
-      where,
-      orderBy: { date: 'desc' },
-    });
+    const attendances = await Attendance.find(query).sort({ date: -1 });
 
     res.json({ status: 'success', data: { attendances } });
   } catch (error) {
@@ -228,15 +221,19 @@ export const updateAttendance = async (
     const { id } = req.params;
     const { status, checkIn, checkOut, notes } = req.body;
 
-    const attendance = await prisma.attendance.update({
-      where: { id },
-      data: {
-        status,
-        checkIn: checkIn ? new Date(checkIn) : undefined,
-        checkOut: checkOut ? new Date(checkOut) : undefined,
-        notes,
-      },
-    });
+    const updateData: any = { status, notes };
+    if (checkIn) updateData.checkIn = new Date(checkIn);
+    if (checkOut) updateData.checkOut = new Date(checkOut);
+
+    const attendance = await Attendance.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+
+    if (!attendance) {
+      throw new AppError('Attendance not found', 404);
+    }
 
     res.json({ status: 'success', data: { attendance } });
   } catch (error) {

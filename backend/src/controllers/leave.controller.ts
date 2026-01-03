@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import prisma from '../lib/prisma.js';
+import { LeaveRequest, LeaveBalance, Profile } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 
@@ -12,31 +12,27 @@ export const applyLeave = async (
     const { leaveType, startDate, endDate, reason } = req.body;
 
     // Check for overlapping leaves
-    const overlapping = await prisma.leaveRequest.findFirst({
-      where: {
-        userId: req.user!.id,
-        status: { in: ['PENDING', 'APPROVED'] },
-        OR: [
-          {
-            startDate: { lte: new Date(endDate) },
-            endDate: { gte: new Date(startDate) },
-          },
-        ],
-      },
+    const overlapping = await LeaveRequest.findOne({
+      userId: req.user!.id,
+      status: { $in: ['PENDING', 'APPROVED'] },
+      $or: [
+        {
+          startDate: { $lte: new Date(endDate) },
+          endDate: { $gte: new Date(startDate) },
+        },
+      ],
     });
 
     if (overlapping) {
       throw new AppError('You already have a leave request for these dates', 400);
     }
 
-    const leave = await prisma.leaveRequest.create({
-      data: {
-        userId: req.user!.id,
-        leaveType,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        reason,
-      },
+    const leave = await LeaveRequest.create({
+      userId: req.user!.id,
+      leaveType,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      reason,
     });
 
     res.status(201).json({ status: 'success', data: { leave } });
@@ -52,21 +48,20 @@ export const getMyLeaves = async (
 ) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = { userId: req.user!.id };
+    const query: any = { userId: req.user!.id };
 
     if (status) {
-      where.status = status;
+      query.status = status;
     }
 
-    const leaves = await prisma.leaveRequest.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-    });
+    const leaves = await LeaveRequest.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
 
-    const total = await prisma.leaveRequest.count({ where });
+    const total = await LeaveRequest.countDocuments(query);
 
     res.json({
       status: 'success',
@@ -92,35 +87,46 @@ export const getAllLeaves = async (
 ) => {
   try {
     const { status, userId, page = 1, limit = 20 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = {};
+    const query: any = {};
 
     if (status) {
-      where.status = status;
+      query.status = status;
     }
 
     if (userId) {
-      where.userId = userId;
+      query.userId = userId;
     }
 
-    const leaves = await prisma.leaveRequest.findMany({
-      where,
-      include: {
-        user: {
-          include: { profile: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
-    });
+    const leaves = await LeaveRequest.find(query)
+      .populate({
+        path: 'userId',
+        select: '-password',
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
 
-    const total = await prisma.leaveRequest.count({ where });
+    // Get profiles for users
+    const userIds = leaves.map(l => l.userId);
+    const profiles = await Profile.find({ userId: { $in: userIds } });
+    const profileMap = new Map(profiles.map(p => [p.userId.toString(), p]));
+
+    const leavesWithProfiles = leaves.map(leave => ({
+      ...leave.toObject(),
+      user: {
+        ...leave.userId,
+        profile: profileMap.get((leave.userId as any)._id?.toString()) || null,
+      },
+    }));
+
+    const total = await LeaveRequest.countDocuments(query);
 
     res.json({
       status: 'success',
       data: {
-        leaves,
+        leaves: leavesWithProfiles,
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -142,13 +148,9 @@ export const getLeaveById = async (
   try {
     const { id } = req.params;
 
-    const leave = await prisma.leaveRequest.findUnique({
-      where: { id },
-      include: {
-        user: {
-          include: { profile: true },
-        },
-      },
+    const leave = await LeaveRequest.findById(id).populate({
+      path: 'userId',
+      select: '-password',
     });
 
     if (!leave) {
@@ -156,11 +158,24 @@ export const getLeaveById = async (
     }
 
     // Employees can only view their own leaves
-    if (req.user!.role === 'EMPLOYEE' && leave.userId !== req.user!.id) {
+    if (req.user!.role === 'EMPLOYEE' && (leave.userId as any)._id.toString() !== req.user!.id) {
       throw new AppError('Access denied', 403);
     }
 
-    res.json({ status: 'success', data: { leave } });
+    const profile = await Profile.findOne({ userId: leave.userId });
+
+    res.json({
+      status: 'success',
+      data: {
+        leave: {
+          ...leave.toObject(),
+          user: {
+            ...leave.userId,
+            profile,
+          },
+        },
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -175,7 +190,7 @@ export const approveLeave = async (
     const { id } = req.params;
     const { comments } = req.body;
 
-    const leave = await prisma.leaveRequest.findUnique({ where: { id } });
+    const leave = await LeaveRequest.findById(id);
 
     if (!leave) {
       throw new AppError('Leave request not found', 404);
@@ -185,34 +200,29 @@ export const approveLeave = async (
       throw new AppError('Leave request is not pending', 400);
     }
 
-    const updated = await prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        status: 'APPROVED',
-        approvedBy: req.user!.id,
-        approvedAt: new Date(),
-        comments,
-      },
-    });
+    leave.status = 'APPROVED';
+    leave.approvedBy = req.user!.id as any;
+    leave.approvedAt = new Date();
+    leave.comments = comments;
+    await leave.save();
 
     // Update leave balance
     const days = Math.ceil(
       (leave.endDate.getTime() - leave.startDate.getTime()) / (1000 * 60 * 60 * 24)
     ) + 1;
 
-    await prisma.leaveBalance.updateMany({
-      where: {
+    await LeaveBalance.findOneAndUpdate(
+      {
         userId: leave.userId,
         leaveType: leave.leaveType,
         year: new Date().getFullYear(),
       },
-      data: {
-        used: { increment: days },
-        remaining: { decrement: days },
-      },
-    });
+      {
+        $inc: { used: days, remaining: -days },
+      }
+    );
 
-    res.json({ status: 'success', data: { leave: updated } });
+    res.json({ status: 'success', data: { leave } });
   } catch (error) {
     next(error);
   }
@@ -227,7 +237,7 @@ export const rejectLeave = async (
     const { id } = req.params;
     const { comments } = req.body;
 
-    const leave = await prisma.leaveRequest.findUnique({ where: { id } });
+    const leave = await LeaveRequest.findById(id);
 
     if (!leave) {
       throw new AppError('Leave request not found', 404);
@@ -237,17 +247,13 @@ export const rejectLeave = async (
       throw new AppError('Leave request is not pending', 400);
     }
 
-    const updated = await prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        status: 'REJECTED',
-        approvedBy: req.user!.id,
-        approvedAt: new Date(),
-        comments,
-      },
-    });
+    leave.status = 'REJECTED';
+    leave.approvedBy = req.user!.id as any;
+    leave.approvedAt = new Date();
+    leave.comments = comments;
+    await leave.save();
 
-    res.json({ status: 'success', data: { leave: updated } });
+    res.json({ status: 'success', data: { leave } });
   } catch (error) {
     next(error);
   }
@@ -261,13 +267,13 @@ export const cancelLeave = async (
   try {
     const { id } = req.params;
 
-    const leave = await prisma.leaveRequest.findUnique({ where: { id } });
+    const leave = await LeaveRequest.findById(id);
 
     if (!leave) {
       throw new AppError('Leave request not found', 404);
     }
 
-    if (leave.userId !== req.user!.id) {
+    if (leave.userId.toString() !== req.user!.id) {
       throw new AppError('Access denied', 403);
     }
 
@@ -275,7 +281,7 @@ export const cancelLeave = async (
       throw new AppError('Only pending leave requests can be cancelled', 400);
     }
 
-    await prisma.leaveRequest.delete({ where: { id } });
+    await LeaveRequest.findByIdAndDelete(id);
 
     res.json({ status: 'success', message: 'Leave request cancelled' });
   } catch (error) {
@@ -291,11 +297,9 @@ export const getLeaveBalance = async (
   try {
     const year = new Date().getFullYear();
 
-    let balances = await prisma.leaveBalance.findMany({
-      where: {
-        userId: req.user!.id,
-        year,
-      },
+    let balances = await LeaveBalance.find({
+      userId: req.user!.id,
+      year,
     });
 
     // If no balances exist, create default ones
@@ -307,20 +311,18 @@ export const getLeaveBalance = async (
         { leaveType: 'UNPAID' as const, total: 30 },
       ];
 
-      await prisma.leaveBalance.createMany({
-        data: defaultBalances.map((b) => ({
+      await LeaveBalance.insertMany(
+        defaultBalances.map((b) => ({
           userId: req.user!.id,
           leaveType: b.leaveType,
           total: b.total,
           used: 0,
           remaining: b.total,
           year,
-        })),
-      });
+        }))
+      );
 
-      balances = await prisma.leaveBalance.findMany({
-        where: { userId: req.user!.id, year },
-      });
+      balances = await LeaveBalance.find({ userId: req.user!.id, year });
     }
 
     res.json({ status: 'success', data: { balances } });
