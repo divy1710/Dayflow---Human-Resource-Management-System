@@ -66,15 +66,25 @@ export interface AuthResponse {
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LEAVE';
 
 export interface Attendance {
-  id: string;
-  userId: string;
+  _id: string;
+  userId: any;
   date: string;
   checkIn?: string;
   checkOut?: string;
   status: AttendanceStatus;
   workHours?: number;
   notes?: string;
-  user?: User;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AttendanceStats {
+  totalDays: number;
+  present: number;
+  absent: number;
+  halfDay: number;
+  leave: number;
+  attendanceRate: number;
 }
 
 // Leave types
@@ -82,8 +92,8 @@ export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type LeaveType = 'PAID' | 'SICK' | 'UNPAID' | 'CASUAL';
 
 export interface LeaveRequest {
-  id: string;
-  userId: string;
+  _id: string;
+  userId: any;
   leaveType: LeaveType;
   startDate: string;
   endDate: string;
@@ -92,8 +102,15 @@ export interface LeaveRequest {
   approvedBy?: string;
   approvedAt?: string;
   comments?: string;
-  user?: User;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateLeaveRequestData {
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
 }
 
 export interface LeaveBalance {
@@ -108,15 +125,33 @@ export interface LeaveBalance {
 
 export interface ApplyLeaveData {
   leaveType: LeaveType;
-  startDate: string;
-  endDate: string;
-  reason?: string;
+  _id: string;
+  userId: any;
+  basicSalary: number;
+  allowances: number;
+  deductions: number;
+  netSalary: number;
+  currency: string;
+  paymentFrequency: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Salary types
-export interface Salary {
-  id: string;
+export interface CreateSalaryData {
   userId: string;
+  basicSalary: number;
+  allowances: number;
+  deductions: number;
+  currency?: string;
+  paymentFrequency?: string;
+}
+
+export interface UpdateSalaryData {
+  basicSalary?: number;
+  allowances?: number;
+  deductions?: number;
+  currency?: string;
+  paymentFrequency?: stringing;
   basicSalary: number;
   allowances: number;
   deductions: number;

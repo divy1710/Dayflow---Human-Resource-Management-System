@@ -1,4 +1,5 @@
 import { useAuthStore } from '../stores';
+import { Link } from 'react-router-dom';
 import { 
   Users, UserPlus, Search, Bell, TrendingUp, AlertCircle,
   Briefcase, CheckCircle, Calendar, FileText, DollarSign,
@@ -35,14 +36,18 @@ const Dashboard = () => {
           </div>
         </div>
         <nav className="sidebar-nav">
-          <a href="#" className="nav-item active">
+          <Link to="/dashboard" className="nav-item active">
             <Briefcase size={18} />
             <span>Dashboard</span>
-          </a>
-          <a href="#" className="nav-item">
+          </Link>
+          <Link to="/employees" className="nav-item">
             <Users size={18} />
             <span>Employees</span>
-          </a>
+          </Link>
+          <Link to="/attendance" className="nav-item">
+            <Calendar size={18} />
+            <span>Attendance</span>
+          </Link>
           <a href="#" className="nav-item">
             <UserPlus size={18} />
             <span>Recruitment</span>
@@ -51,10 +56,10 @@ const Dashboard = () => {
             <DollarSign size={18} />
             <span>Payroll</span>
           </a>
-          <a href="#" className="nav-item">
+          <Link to="/leave" className="nav-item">
             <Calendar size={18} />
             <span>Leave</span>
-          </a>
+          </Link>
         </nav>
         <div className="sidebar-divider">
           <span>SYSTEM</span>

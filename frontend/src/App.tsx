@@ -4,6 +4,8 @@ import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import Dashboard from './pages/DashboardNew';
 import EmployeeManagement from './pages/employee/EmployeeManagement';
+import LeaveManagement from './pages/leave/LeaveManagement';
+import AttendanceManagement from './pages/attendance/AttendanceManagement';
 import './App.css';
 
 function App() {
@@ -27,6 +29,14 @@ function App() {
         <Route 
           path="/employees" 
           element={isAuthenticated ? <EmployeeManagement /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/leave" 
+          element={isAuthenticated ? <LeaveManagement /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/attendance" 
+          element={isAuthenticated ? <AttendanceManagement /> : <Navigate to="/login" />} 
         />
         <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
       </Routes>
