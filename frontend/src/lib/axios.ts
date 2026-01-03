@@ -10,6 +10,9 @@ const api = axios.create({
   },
 });
 
+// Endpoints that should NOT trigger token refresh
+const authEndpoints = ['/auth/signup', '/auth/signin', '/auth/signout', '/auth/refresh', '/otp/send', '/otp/verify'];
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -29,8 +32,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const requestUrl = originalRequest?.url || '';
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Check if this is an auth endpoint - don't try to refresh for these
+    const isAuthEndpoint = authEndpoints.some((endpoint) => requestUrl.includes(endpoint));
+
+    // Only attempt refresh for 401 errors on non-auth endpoints
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {
@@ -40,7 +48,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        // Don't redirect if already on auth pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }

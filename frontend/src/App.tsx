@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthStore } from './stores';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/DashboardNew';
+import EmployeeManagement from './pages/employee/EmployeeManagement';
 import './App.css';
 
 function App() {
@@ -22,6 +23,10 @@ function App() {
         <Route 
           path="/dashboard" 
           element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/employees" 
+          element={isAuthenticated ? <EmployeeManagement /> : <Navigate to="/login" />} 
         />
         <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
       </Routes>

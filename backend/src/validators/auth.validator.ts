@@ -10,11 +10,7 @@ export const signUpSchema = z.object({
       .email('Invalid email address'),
     password: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-      ),
+      .min(8, 'Password must be at least 8 characters'),
     firstName: z
       .string()
       .min(2, 'First name must be at least 2 characters'),

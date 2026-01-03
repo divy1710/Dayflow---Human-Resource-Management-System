@@ -34,13 +34,14 @@ const SignIn = () => {
       <div className="auth-card">
         <div className="auth-logo">
           <span>DayFlow</span>
+          <p>Human Resource Management System</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
           
           <div className="form-group">
-            <label htmlFor="email">Login Id/Email :-</label>
+            <label htmlFor="email">Email Address</label>
             <input
               type="email"
               id="email"
@@ -53,7 +54,7 @@ const SignIn = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password :-</label>
+            <label htmlFor="password">Password</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -75,12 +76,12 @@ const SignIn = () => {
           </div>
 
           <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? 'SIGNING IN...' : 'SIGN IN'}
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
         <p className="auth-switch">
-          Don't have an Account? <Link to="/signup">Sign Up</Link>
+          Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
       </div>
     </div>

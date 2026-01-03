@@ -1,15 +1,36 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
-// Create transporter - configure based on your email provider
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+let transporter: Transporter | null = null;
+
+// Create transporter lazily to ensure env vars are loaded
+const getTransporter = (): Transporter => {
+  if (transporter) return transporter;
+  
+  // For Gmail with App Password
+  if (process.env.SMTP_HOST === 'smtp.gmail.com') {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  } else {
+    // For other SMTP providers
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  }
+  
+  return transporter;
+};
 
 export const sendOtpEmail = async (email: string, otp: string): Promise<void> => {
   const mailOptions = {
@@ -52,7 +73,7 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<void> =>
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  await getTransporter().sendMail(mailOptions);
 };
 
 export const generateOtp = (): string => {

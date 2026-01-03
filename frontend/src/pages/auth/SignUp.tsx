@@ -192,6 +192,7 @@ const SignUp = () => {
       <div className="auth-card signup-card">
         <div className="auth-logo">
           <span>DayFlow</span>
+          <p>Human Resource Management System</p>
         </div>
 
         {/* Progress indicator */}
@@ -221,7 +222,7 @@ const SignUp = () => {
           {step === 'form' && (
             <>
               <div className="form-group">
-                <label htmlFor="companyName">Company Name :-</label>
+                <label htmlFor="companyName">Company Name</label>
                 <input
                   type="text"
                   id="companyName"
@@ -234,7 +235,7 @@ const SignUp = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="firstName">First Name :-</label>
+                  <label htmlFor="firstName">First Name</label>
                   <input
                     type="text"
                     id="firstName"
@@ -246,7 +247,7 @@ const SignUp = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="lastName">Last Name :-</label>
+                  <label htmlFor="lastName">Last Name</label>
                   <input
                     type="text"
                     id="lastName"
@@ -260,7 +261,7 @@ const SignUp = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="email">Email :-</label>
+                <label htmlFor="email">Email Address</label>
                 <input
                   type="email"
                   id="email"
@@ -273,7 +274,7 @@ const SignUp = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="phone">Phone :-</label>
+                <label htmlFor="phone">Phone Number</label>
                 <input
                   type="tel"
                   id="phone"
@@ -285,7 +286,7 @@ const SignUp = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="password">Password :-</label>
+                <label htmlFor="password">Password</label>
                 <div className="password-input-wrapper">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -407,6 +408,8 @@ const SignUp = () => {
               <h3>Email Verified!</h3>
               <p>Your email has been successfully verified.</p>
               <p>Click below to complete your registration.</p>
+
+              {error && <div className="auth-error" style={{ marginTop: '16px' }}>{error}</div>}
 
               <button type="submit" className="auth-button" disabled={isLoading}>
                 {isLoading ? (

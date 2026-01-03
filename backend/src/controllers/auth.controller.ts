@@ -20,10 +20,11 @@ export const signUp = async (
 ) => {
   try {
     const { employeeId, email, password, role, firstName, lastName } = req.body;
+    const normalizedEmail = email.toLowerCase();
 
     // Check if email is verified via OTP
     const otpRecord = await Otp.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       verified: true,
     });
 
@@ -33,7 +34,7 @@ export const signUp = async (
 
     // Check if user exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { employeeId }],
+      $or: [{ email: normalizedEmail }, { employeeId }],
     });
 
     if (existingUser) {
@@ -46,9 +47,10 @@ export const signUp = async (
     // Create user
     const user = await User.create({
       employeeId,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role: role || 'EMPLOYEE',
+      isVerified: true, // Email is verified via OTP
     });
 
     // Create profile
@@ -57,6 +59,9 @@ export const signUp = async (
       firstName,
       lastName,
     });
+
+    // Clean up used OTP
+    await Otp.deleteMany({ email: normalizedEmail });
 
     const token = generateToken(user._id.toString());
 

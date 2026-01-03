@@ -5,3 +5,4 @@ export { LeaveRequest, ILeaveRequest } from './leave.model.js';
 export { LeaveBalance, ILeaveBalance } from './leaveBalance.model.js';
 export { Salary, ISalary } from './salary.model.js';
 export { Otp, IOtp } from './otp.model.js';
+export { Employee, IEmployee } from './employee.model.js';
