@@ -96,7 +96,7 @@ const Dashboard = () => {
               <Users size={24} />
             </div>
             <div>
-              <h2>HR Portal</h2>
+              <h2>Admin/HR Portal</h2>
               <p>Admin Dashboard</p>
             </div>
           </div>
@@ -149,7 +149,7 @@ const Dashboard = () => {
             </div>
             <div className="user-details">
               <p className="user-name">{user?.profile?.firstName || 'Admin'}</p>
-              <p className="user-role">Administrator</p>
+              <p className="user-role">Admin/HR</p>
             </div>
           </div>
           <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">

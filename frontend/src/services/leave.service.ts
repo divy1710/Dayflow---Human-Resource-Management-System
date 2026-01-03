@@ -28,6 +28,16 @@ export const leaveService = {
     return response.data;
   },
 
+  // Alias for getMyLeaves
+  getMyLeaveRequests: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<LeaveResponse>> => {
+    const response = await api.get('/leave/my', { params });
+    return response.data;
+  },
+
   getAllLeaves: async (params?: {
     status?: string;
     userId?: string;

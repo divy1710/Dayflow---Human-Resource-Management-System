@@ -16,9 +16,9 @@ router.use(authenticate);
 router.get('/my', getMySalary);
 
 // Admin routes
-router.get('/', authorize('ADMIN', 'HR'), getAllSalaries);
-router.get('/user/:userId', authorize('ADMIN', 'HR'), getSalaryByUser);
-router.post('/', authorize('ADMIN', 'HR'), createSalary);
-router.put('/:userId', authorize('ADMIN', 'HR'), updateSalary);
+router.get('/', authorize('ADMIN'), getAllSalaries);
+router.get('/user/:userId', authorize('ADMIN'), getSalaryByUser);
+router.post('/', authorize('ADMIN'), createSalary);
+router.put('/:userId', authorize('ADMIN'), updateSalary);
 
 export default router;

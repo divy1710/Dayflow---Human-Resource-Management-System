@@ -17,7 +17,7 @@ function App() {
 
   const getDashboard = () => {
     if (!isAuthenticated) return <Navigate to="/login" />;
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
+    const isAdmin = user?.role === 'ADMIN';
     return isAdmin ? <Dashboard /> : <EmployeeDashboard />;
   };
 

@@ -12,6 +12,7 @@ import './Profile.css';
 
 const ProfilePage = () => {
   const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
   const [profile, setProfile] = useState<Profile | null>(null);
   const [salary, setSalary] = useState<Salary | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -145,8 +146,8 @@ const ProfilePage = () => {
               <Users size={24} />
             </div>
             <div>
-              <h2>HR Portal</h2>
-              <p>Admin Dashboard</p>
+              <h2>{isAdmin ? 'Admin/HR Portal' : 'Employee Portal'}</h2>
+              <p>{isAdmin ? 'Admin Dashboard' : 'Employee Portal'}</p>
             </div>
           </div>
         </div>
@@ -155,22 +156,28 @@ const ProfilePage = () => {
             <Briefcase size={18} />
             <span>Dashboard</span>
           </Link>
-          <Link to="/employees" className="nav-item">
-            <Users size={18} />
-            <span>Employees</span>
-          </Link>
+          {isAdmin && (
+            <Link to="/employees" className="nav-item">
+              <Users size={18} />
+              <span>Employees</span>
+            </Link>
+          )}
           <Link to="/attendance" className="nav-item">
             <Calendar size={18} />
             <span>Attendance</span>
           </Link>
-          <a href="#" className="nav-item">
-            <UserPlus size={18} />
-            <span>Recruitment</span>
-          </a>
-          <Link to="/salary" className="nav-item">
-            <DollarSign size={18} />
-            <span>Payroll</span>
-          </Link>
+          {isAdmin && (
+            <a href="#" className="nav-item">
+              <UserPlus size={18} />
+              <span>Recruitment</span>
+            </a>
+          )}
+          {isAdmin && (
+            <Link to="/salary" className="nav-item">
+              <DollarSign size={18} />
+              <span>Payroll</span>
+            </Link>
+          )}
           <Link to="/leave" className="nav-item">
             <FileText size={18} />
             <span>Leave</span>
@@ -179,10 +186,12 @@ const ProfilePage = () => {
             <User size={18} />
             <span>Profile</span>
           </Link>
-          <Link to="/reports" className="nav-item">
-            <FileText size={18} />
-            <span>Reports</span>
-          </Link>
+          {isAdmin && (
+            <Link to="/reports" className="nav-item">
+              <FileText size={18} />
+              <span>Reports</span>
+            </Link>
+          )}
         </nav>
         <div className="sidebar-divider">
           <span>SYSTEM</span>
@@ -204,7 +213,7 @@ const ProfilePage = () => {
             </div>
             <div className="user-details">
               <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
-              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Admin/HR' : 'Employee'}</p>
             </div>
           </div>
           <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">
@@ -277,7 +286,7 @@ const ProfilePage = () => {
               </div>
               <div className="info-item">
                 <label><Calendar size={16} /> Date of Birth</label>
-                {isEditing ? (
+                {isEditing && isAdmin ? (
                   <input
                     type="date"
                     value={formData.dateOfBirth?.split('T')[0] || ''}

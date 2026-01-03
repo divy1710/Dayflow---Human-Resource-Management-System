@@ -22,8 +22,14 @@ const SignIn = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signIn(formData.email, formData.password);
-      navigate('/dashboard');
+      const result = await signIn(formData.email, formData.password);
+      // Redirect based on user role
+      const userRole = result?.role || 'EMPLOYEE';
+      if (userRole === 'ADMIN') {
+        navigate('/dashboard');
+      } else {
+        navigate('/dashboard'); // Will auto-redirect to employee dashboard via App.tsx
+      }
     } catch (err) {
       // Error is handled by the store
     }

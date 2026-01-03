@@ -11,7 +11,7 @@ import './Reports.css';
 
 const Reports = () => {
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
+  const isAdmin = user?.role === 'ADMIN';
   const [selectedReport, setSelectedReport] = useState<string>('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [generating, setGenerating] = useState(false);
@@ -192,7 +192,7 @@ const Reports = () => {
               <Users size={24} />
             </div>
             <div>
-              <h2>HR Portal</h2>
+              <h2>Admin/HR Portal</h2>
               <p>Admin Dashboard</p>
             </div>
           </div>
@@ -251,7 +251,7 @@ const Reports = () => {
             </div>
             <div className="user-details">
               <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
-              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Admin/HR' : 'Employee'}</p>
             </div>
           </div>
           <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">

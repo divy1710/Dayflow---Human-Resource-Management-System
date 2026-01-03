@@ -18,7 +18,7 @@ export const signUpSchema = z.object({
       .string()
       .min(2, 'Last name must be at least 2 characters'),
     role: z
-      .enum(['EMPLOYEE', 'HR', 'ADMIN'])
+      .enum(['EMPLOYEE', 'ADMIN'])
       .optional()
       .default('EMPLOYEE'),
   }),

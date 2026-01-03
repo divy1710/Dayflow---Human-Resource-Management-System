@@ -9,7 +9,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<User>;
   signUp: (data: {
     employeeId: string;
     email: string;
@@ -39,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          return response.data.user;
         } catch (error: any) {
           set({
             error: error.response?.data?.message || 'Failed to sign in',

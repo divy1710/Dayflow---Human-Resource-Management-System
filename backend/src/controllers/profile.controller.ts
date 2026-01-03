@@ -36,7 +36,7 @@ export const updateProfile = async (
 ) => {
   try {
     const userId = req.params.userId || req.user!.id;
-    const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'HR';
+    const isAdmin = req.user!.role === 'ADMIN';
 
     // Employees can only update their own profile
     if (!isAdmin && req.user!.id !== userId) {

@@ -13,7 +13,7 @@ import './Attendance.css';
 
 const AttendanceManagement = () => {
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
+  const isAdmin = user?.role === 'ADMIN';
   
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);

@@ -12,7 +12,7 @@ import './Salary.css';
 
 const SalaryManagement = () => {
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
+  const isAdmin = user?.role === 'ADMIN';
   
   const [salaries, setSalaries] = useState<Salary[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -192,7 +192,7 @@ const SalaryManagement = () => {
               <Users size={24} />
             </div>
             <div>
-              <h2>HR Portal</h2>
+              <h2>Admin/HR Portal</h2>
               <p>Admin Dashboard</p>
             </div>
           </div>
@@ -251,7 +251,7 @@ const SalaryManagement = () => {
             </div>
             <div className="user-details">
               <p className="user-name">{user?.profile?.firstName || 'Admin'}</p>
-              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Admin/HR' : 'Employee'}</p>
             </div>
           </div>
           <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">

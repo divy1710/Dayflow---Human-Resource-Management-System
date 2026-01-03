@@ -29,12 +29,12 @@ router.get('/my', getMyAttendance);
 router.get('/stats', getAttendanceStats);
 router.post('/regularization', requestRegularization);
 
-// Admin/HR routes
-router.get('/', authorize('ADMIN', 'HR'), getAllAttendance);
-router.get('/user/:userId', authorize('ADMIN', 'HR'), getAttendanceByUser);
-router.put('/:id', authorize('ADMIN', 'HR'), updateAttendance);
-router.post('/mark-absentees', authorize('ADMIN', 'HR'), markAbsentees);
-router.get('/regularization/requests', authorize('ADMIN', 'HR'), getRegularizationRequests);
-router.put('/regularization/:id', authorize('ADMIN', 'HR'), processRegularization);
+// Admin routes
+router.get('/', authorize('ADMIN'), getAllAttendance);
+router.get('/user/:userId', authorize('ADMIN'), getAttendanceByUser);
+router.put('/:id', authorize('ADMIN'), updateAttendance);
+router.post('/mark-absentees', authorize('ADMIN'), markAbsentees);
+router.get('/regularization/requests', authorize('ADMIN'), getRegularizationRequests);
+router.put('/regularization/:id', authorize('ADMIN'), processRegularization);
 
 export default router;

@@ -181,7 +181,7 @@ const SignUp = () => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: formData.role as 'ADMIN' | 'HR' | 'EMPLOYEE',
+        role: formData.role as 'ADMIN' | 'EMPLOYEE',
       });
       navigate('/dashboard');
     } catch {
@@ -298,8 +298,7 @@ const SignUp = () => {
                   className="role-select"
                 >
                   <option value="EMPLOYEE">Employee</option>
-                  <option value="HR">HR</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="ADMIN">Admin/HR</option>
                 </select>
               </div>
 
