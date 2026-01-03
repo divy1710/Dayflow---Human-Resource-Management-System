@@ -153,10 +153,18 @@ export const deleteDocument = async (
   try {
     const { documentId } = req.params;
 
-    const profile = await Profile.findOne({ userId: req.user!.id });
+    // Find the profile that contains this document
+    const profile = await Profile.findOne({ 
+      'documents._id': new mongoose.Types.ObjectId(documentId)
+    });
 
     if (!profile) {
-      throw new AppError('Profile not found', 404);
+      throw new AppError('Document not found', 404);
+    }
+
+    // Check authorization: user can only delete their own documents unless they're admin
+    if (req.user!.role !== 'ADMIN' && profile.userId.toString() !== req.user!.id) {
+      throw new AppError('Access denied', 403);
     }
 
     const docIndex = profile.documents.findIndex(

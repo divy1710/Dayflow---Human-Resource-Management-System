@@ -76,6 +76,12 @@ export const leaveService = {
     return response.data;
   },
 
+  // Alias for cancelLeave to match component usage
+  deleteLeave: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await api.delete(`/leave/${id}`);
+    return response.data;
+  },
+
   getLeaveBalance: async (): Promise<
     ApiResponse<{ balances: LeaveBalance[] }>
   > => {

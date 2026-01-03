@@ -86,7 +86,7 @@ export const getAllLeaves = async (
   next: NextFunction
 ) => {
   try {
-    const { status, userId, page = 1, limit = 20 } = req.query;
+    const { status, userId, leaveType, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const query: any = {};
@@ -99,34 +99,29 @@ export const getAllLeaves = async (
       query.userId = userId;
     }
 
+    if (leaveType) {
+      query.leaveType = leaveType;
+    }
+
     const leaves = await LeaveRequest.find(query)
       .populate({
         path: 'userId',
-        select: '-password',
+        select: 'employeeId email',
+        populate: {
+          path: 'profile',
+          select: 'firstName lastName department designation'
+        }
       })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
-
-    // Get profiles for users
-    const userIds = leaves.map(l => l.userId);
-    const profiles = await Profile.find({ userId: { $in: userIds } });
-    const profileMap = new Map(profiles.map(p => [p.userId.toString(), p]));
-
-    const leavesWithProfiles = leaves.map(leave => ({
-      ...leave.toObject(),
-      user: {
-        ...leave.userId,
-        profile: profileMap.get((leave.userId as any)._id?.toString()) || null,
-      },
-    }));
 
     const total = await LeaveRequest.countDocuments(query);
 
     res.json({
       status: 'success',
       data: {
-        leaves: leavesWithProfiles,
+        leaves,
         pagination: {
           page: Number(page),
           limit: Number(limit),

@@ -6,6 +6,7 @@ import Dashboard from './pages/DashboardNew';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import EmployeeManagement from './pages/employee/EmployeeManagement';
 import LeaveManagement from './pages/leave/LeaveManagement';
+import EmployeeLeave from './pages/leave/EmployeeLeave';
 import AttendanceManagement from './pages/attendance/AttendanceManagement';
 import EmployeeAttendance from './pages/attendance/EmployeeAttendance';
 import ProfilePage from './pages/profile/ProfilePage';
@@ -26,6 +27,12 @@ function App() {
     if (!isAuthenticated) return <Navigate to="/login" />;
     const isAdmin = user?.role === 'ADMIN';
     return isAdmin ? <AttendanceManagement /> : <EmployeeAttendance />;
+  };
+
+  const getLeavePage = () => {
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    const isAdmin = user?.role === 'ADMIN';
+    return isAdmin ? <LeaveManagement /> : <EmployeeLeave />;
   };
 
   return (
@@ -49,7 +56,7 @@ function App() {
         />
         <Route 
           path="/leave" 
-          element={isAuthenticated ? <LeaveManagement /> : <Navigate to="/login" />} 
+          element={getLeavePage()} 
         />
         <Route 
           path="/attendance" 

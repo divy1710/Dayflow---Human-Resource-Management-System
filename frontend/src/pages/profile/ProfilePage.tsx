@@ -504,7 +504,7 @@ const ProfilePage = () => {
             {profile?.documents && profile.documents.length > 0 ? (
               <div className="documents-list">
                 {profile.documents.map((doc: any) => (
-                  <div key={doc.id} className="document-item">
+                  <div key={doc._id} className="document-item">
                     <FileText size={20} />
                     <div className="document-info">
                       <p className="document-name">{doc.filename || doc.name}</p>
@@ -514,14 +514,14 @@ const ProfilePage = () => {
                       <button 
                         className="btn-icon" 
                         title="Download"
-                        onClick={() => handleDownloadDocument(doc.id, doc.filename || doc.name)}
+                        onClick={() => handleDownloadDocument(doc._id, doc.filename || doc.name)}
                       >
                         <Download size={18} />
                       </button>
                       <button 
                         className="btn-icon delete" 
                         title="Delete"
-                        onClick={() => handleDeleteDocument(doc.id)}
+                        onClick={() => handleDeleteDocument(doc._id)}
                       >
                         <Trash2 size={18} />
                       </button>

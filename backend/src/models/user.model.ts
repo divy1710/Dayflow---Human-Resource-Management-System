@@ -40,7 +40,17 @@ const userSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
 );
+
+// Virtual populate for profile
+userSchema.virtual('profile', {
+  ref: 'Profile',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true
+});
 
 export const User = mongoose.model<IUser>('User', userSchema);

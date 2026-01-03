@@ -4,7 +4,7 @@ import { leaveService } from '../../services';
 import type { LeaveRequest, CreateLeaveRequestData } from '../../types';
 import { 
   Calendar, Plus, X, Search, Filter, ChevronLeft, ChevronRight,
-  Check, XCircle, Clock, FileText, User, Trash2, Edit, Eye,
+  Check, XCircle, Clock, FileText, User, Trash2, Eye,
   Users, Briefcase, DollarSign, Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,7 +15,6 @@ const LeaveManagement = () => {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingLeave, setEditingLeave] = useState<LeaveRequest | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterType, setFilterType] = useState<string>('ALL');
@@ -48,10 +47,13 @@ const LeaveManagement = () => {
         status: filterStatus !== 'ALL' ? filterStatus : undefined,
         leaveType: filterType !== 'ALL' ? filterType : undefined
       });
+      console.log('Fetched leaves:', response.data);
       setLeaves(response.data.leaves);
       setTotalPages(response.data.pagination.totalPages);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch leaves:', error);
+      console.error('Error response:', error.response?.data);
+      alert('Failed to load leave requests. Please check console for details.');
     } finally {
       setLoading(false);
     }
@@ -60,11 +62,7 @@ const LeaveManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingLeave) {
-        await leaveService.updateLeave(editingLeave._id, formData);
-      } else {
-        await leaveService.applyLeave(formData);
-      }
+      await leaveService.applyLeave(formData);
       setShowModal(false);
       resetForm();
       fetchLeaves();
@@ -74,23 +72,28 @@ const LeaveManagement = () => {
   };
 
   const handleApprove = async (id: string) => {
+    const comments = prompt('Add approval comments (optional):');
     try {
-      await leaveService.approveLeave(id, { status: 'APPROVED', comments: '' });
+      await leaveService.approveLeave(id, comments || '');
       fetchLeaves();
+      alert('Leave request approved successfully!');
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to approve leave');
     }
   };
 
   const handleReject = async (id: string) => {
-    const comments = prompt('Reason for rejection:');
-    if (comments) {
+    const comments = prompt('Reason for rejection (required):');
+    if (comments && comments.trim()) {
       try {
-        await leaveService.approveLeave(id, { status: 'REJECTED', comments });
+        await leaveService.rejectLeave(id, comments);
         fetchLeaves();
+        alert('Leave request rejected');
       } catch (error: any) {
         alert(error.response?.data?.message || 'Failed to reject leave');
       }
+    } else if (comments !== null) {
+      alert('Please provide a reason for rejection');
     }
   };
 
@@ -105,16 +108,7 @@ const LeaveManagement = () => {
     }
   };
 
-  const handleEdit = (leave: LeaveRequest) => {
-    setEditingLeave(leave);
-    setFormData({
-      leaveType: leave.leaveType,
-      startDate: new Date(leave.startDate).toISOString().split('T')[0],
-      endDate: new Date(leave.endDate).toISOString().split('T')[0],
-      reason: leave.reason || ''
-    });
-    setShowModal(true);
-  };
+
 
   const resetForm = () => {
     setFormData({
@@ -123,7 +117,6 @@ const LeaveManagement = () => {
       endDate: '',
       reason: ''
     });
-    setEditingLeave(null);
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -163,8 +156,8 @@ const LeaveManagement = () => {
               <Users size={24} />
             </div>
             <div>
-              <h2>HR Portal</h2>
-              <p>Admin Dashboard</p>
+              <h2>Admin/HR Portal</h2>
+              <p>Leave Management</p>
             </div>
           </div>
         </div>
@@ -222,7 +215,7 @@ const LeaveManagement = () => {
             </div>
             <div className="user-details">
               <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
-              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+              <p className="user-role">Admin/HR</p>
             </div>
           </div>
           <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">
@@ -350,13 +343,6 @@ const LeaveManagement = () => {
                           </>
                         )}
                         <button
-                          className="action-btn edit-btn"
-                          onClick={() => handleEdit(leave)}
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
                           className="action-btn delete-btn"
                           onClick={() => handleDelete(leave._id)}
                           title="Delete"
@@ -401,7 +387,7 @@ const LeaveManagement = () => {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingLeave ? 'Edit Leave Request' : 'Apply for Leave'}</h2>
+              <h2>Apply for Leave</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>
                 <X size={24} />
               </button>
@@ -457,7 +443,7 @@ const LeaveManagement = () => {
                   Cancel
                 </button>
                 <button type="submit" className="btn-primary">
-                  {editingLeave ? 'Update' : 'Submit'}
+                  Submit
                 </button>
               </div>
             </form>
