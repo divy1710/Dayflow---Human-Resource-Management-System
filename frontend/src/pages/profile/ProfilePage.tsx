@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../stores';
-import { profileService, salaryService } from '../../services';
-import type { Profile, Salary } from '../../types';
+import { profileService, salaryService, attendanceService } from '../../services';
+import type { Profile, Salary, Attendance } from '../../types';
 import { 
   User, Mail, Phone, MapPin, Calendar, Briefcase, DollarSign,
   Edit, Save, X, FileText, Upload, Download, Trash2,
@@ -19,6 +19,8 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<Partial<Profile>>({});
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
+  const [checkingOut, setCheckingOut] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSignOut = async () => {
@@ -28,6 +30,9 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchProfileData();
+    if (!isAdmin) {
+      fetchTodayAttendance();
+    }
   }, []);
 
   const fetchProfileData = async () => {
@@ -47,6 +52,36 @@ const ProfilePage = () => {
       console.error('Failed to fetch profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTodayAttendance = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    try {
+      const response = await attendanceService.getMyAttendance({
+        startDate: today.toISOString().split('T')[0],
+        endDate: today.toISOString().split('T')[0]
+      });
+      const todayRec = response.data.attendances.find(a => 
+        new Date(a.date).toDateString() === today.toDateString()
+      );
+      setTodayAttendance(todayRec || null);
+    } catch (error) {
+      console.error('Failed to fetch today attendance:', error);
+    }
+  };
+
+  const handleQuickCheckOut = async () => {
+    try {
+      setCheckingOut(true);
+      const response = await attendanceService.checkOut({});
+      setTodayAttendance(response.data.attendance);
+      alert(response.data.message || 'Checked out successfully!');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to check out');
+    } finally {
+      setCheckingOut(false);
     }
   };
 
@@ -152,60 +187,79 @@ const ProfilePage = () => {
           </div>
         </div>
         <nav className="sidebar-nav">
-          <Link to="/dashboard" className="nav-item">
-            <Briefcase size={18} />
-            <span>Dashboard</span>
-          </Link>
-          {isAdmin && (
-            <Link to="/employees" className="nav-item">
-              <Users size={18} />
-              <span>Employees</span>
-            </Link>
-          )}
-          <Link to="/attendance" className="nav-item">
-            <Calendar size={18} />
-            <span>Attendance</span>
-          </Link>
-          {isAdmin && (
-            <a href="#" className="nav-item">
-              <UserPlus size={18} />
-              <span>Recruitment</span>
-            </a>
-          )}
-          {isAdmin && (
-            <Link to="/salary" className="nav-item">
-              <DollarSign size={18} />
-              <span>Payroll</span>
-            </Link>
-          )}
-          <Link to="/leave" className="nav-item">
-            <FileText size={18} />
-            <span>Leave</span>
-          </Link>
-          <Link to="/profile" className="nav-item active">
-            <User size={18} />
-            <span>Profile</span>
-          </Link>
-          {isAdmin && (
-            <Link to="/reports" className="nav-item">
-              <FileText size={18} />
-              <span>Reports</span>
-            </Link>
+          {isAdmin ? (
+            <>
+              <Link to="/dashboard" className="nav-item">
+                <Briefcase size={18} />
+                <span>Dashboard</span>
+              </Link>
+              <Link to="/employees" className="nav-item">
+                <Users size={18} />
+                <span>Employees</span>
+              </Link>
+              <Link to="/attendance" className="nav-item">
+                <Calendar size={18} />
+                <span>Attendance</span>
+              </Link>
+              <a href="#" className="nav-item">
+                <UserPlus size={18} />
+                <span>Recruitment</span>
+              </a>
+              <Link to="/salary" className="nav-item">
+                <DollarSign size={18} />
+                <span>Payroll</span>
+              </Link>
+              <Link to="/leave" className="nav-item">
+                <FileText size={18} />
+                <span>Leave</span>
+              </Link>
+              <Link to="/profile" className="nav-item active">
+                <User size={18} />
+                <span>Profile</span>
+              </Link>
+              <Link to="/reports" className="nav-item">
+                <FileText size={18} />
+                <span>Reports</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/dashboard" className="nav-item">
+                <Briefcase size={18} />
+                <span>Dashboard</span>
+              </Link>
+              <Link to="/profile" className="nav-item active">
+                <User size={18} />
+                <span>Profile</span>
+              </Link>
+              <Link to="/attendance" className="nav-item">
+                <Calendar size={18} />
+                <span>Attendance</span>
+              </Link>
+              <Link to="/leave" className="nav-item">
+                <Calendar size={18} />
+                <span>Leave Requests</span>
+              </Link>
+            </>
           )}
         </nav>
-        <div className="sidebar-divider">
-          <span>SYSTEM</span>
-        </div>
-        <nav className="sidebar-nav">
-          <a href="#" className="nav-item">
-            <Settings size={18} />
-            <span>Settings</span>
-          </a>
-          <a href="#" className="nav-item">
-            <HelpCircle size={18} />
-            <span>Support</span>
-          </a>
-        </nav>
+        {isAdmin && (
+          <>
+            <div className="sidebar-divider">
+              <span>SYSTEM</span>
+            </div>
+            <nav className="sidebar-nav">
+              <a href="#" className="nav-item">
+                <Settings size={18} />
+                <span>Settings</span>
+              </a>
+              <a href="#" className="nav-item">
+                <HelpCircle size={18} />
+                <span>Support</span>
+              </a>
+            </nav>
+          </>
+        )}
         <div className="sidebar-user">
           <div className="user-info">
             <div className="user-avatar-small">
@@ -227,6 +281,17 @@ const ProfilePage = () => {
         <div className="profile-header">
           <h1>Profile</h1>
           <div className="header-actions">
+            {!isAdmin && todayAttendance?.checkIn && !todayAttendance?.checkOut && (
+              <button 
+                className="btn-edit" 
+                onClick={handleQuickCheckOut}
+                disabled={checkingOut}
+                style={{ marginRight: '10px' }}
+              >
+                <LogOut size={18} />
+                {checkingOut ? 'Checking Out...' : 'Quick Check Out'}
+              </button>
+            )}
             {!isEditing ? (
               <button className="btn-edit" onClick={() => setIsEditing(true)}>
                 <Edit size={18} />

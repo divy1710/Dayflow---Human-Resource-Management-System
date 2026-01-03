@@ -7,6 +7,7 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import EmployeeManagement from './pages/employee/EmployeeManagement';
 import LeaveManagement from './pages/leave/LeaveManagement';
 import AttendanceManagement from './pages/attendance/AttendanceManagement';
+import EmployeeAttendance from './pages/attendance/EmployeeAttendance';
 import ProfilePage from './pages/profile/ProfilePage';
 import SalaryManagement from './pages/salary/SalaryManagement';
 import Reports from './pages/Reports';
@@ -19,6 +20,12 @@ function App() {
     if (!isAuthenticated) return <Navigate to="/login" />;
     const isAdmin = user?.role === 'ADMIN';
     return isAdmin ? <Dashboard /> : <EmployeeDashboard />;
+  };
+
+  const getAttendancePage = () => {
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    const isAdmin = user?.role === 'ADMIN';
+    return isAdmin ? <AttendanceManagement /> : <EmployeeAttendance />;
   };
 
   return (
@@ -46,7 +53,7 @@ function App() {
         />
         <Route 
           path="/attendance" 
-          element={isAuthenticated ? <AttendanceManagement /> : <Navigate to="/login" />} 
+          element={getAttendancePage()} 
         />
         <Route 
           path="/profile" 

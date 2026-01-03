@@ -76,16 +76,19 @@ const attendanceSchema = new Schema<IAttendance>(
     approvedAt: Date,
     notes: String,
     location: {
-      checkIn: {
-        latitude: Number,
-        longitude: Number,
-        address: String,
+      type: {
+        checkIn: {
+          latitude: Number,
+          longitude: Number,
+          address: String,
+        },
+        checkOut: {
+          latitude: Number,
+          longitude: Number,
+          address: String,
+        },
       },
-      checkOut: {
-        latitude: Number,
-        longitude: Number,
-        address: String,
-      },
+      required: false,
     },
   },
   {

@@ -34,11 +34,6 @@ export const checkIn = async (
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Check if weekend
-    if (isWeekend(today)) {
-      throw new AppError('Cannot check in on weekends', 400);
-    }
-
     // Check if already checked in today
     let attendance = await Attendance.findOne({
       userId: req.user!.id,
@@ -54,9 +49,9 @@ export const checkIn = async (
     const shiftEndTime = '18:00';
     const expectedWorkHours = 9;
     
-    // Calculate if late
+    // Calculate if late (skip for weekends)
     const expectedCheckIn = parseTimeWithDate(today, shiftStartTime);
-    const lateArrival = now > expectedCheckIn ? Math.round(getMinutesDifference(now, expectedCheckIn)) : 0;
+    const lateArrival = !isWeekend(today) && now > expectedCheckIn ? Math.round(getMinutesDifference(now, expectedCheckIn)) : 0;
 
     // Create or update attendance
     if (attendance) {
@@ -67,10 +62,10 @@ export const checkIn = async (
       attendance.shiftEndTime = shiftEndTime;
       attendance.expectedWorkHours = expectedWorkHours;
       if (location) {
-        attendance.location = {
-          ...attendance.location,
-          checkIn: location,
-        };
+        if (!attendance.location) {
+          attendance.location = {};
+        }
+        attendance.location.checkIn = location;
       }
       await attendance.save();
     } else {
@@ -158,10 +153,10 @@ export const checkOut = async (
     attendance.earlyDeparture = earlyDeparture;
     attendance.status = status;
     if (location) {
-      attendance.location = {
-        ...attendance.location,
-        checkOut: location,
-      };
+      if (!attendance.location) {
+        attendance.location = {};
+      }
+      attendance.location.checkOut = location;
     }
     await attendance.save();
 
