@@ -97,11 +97,15 @@ const EmployeeDashboard = () => {
         <div className="sidebar-header">
           <div className="portal-logo">
             <div className="logo-icon">
-              <Users size={24} />
+              {user?.profile?.profilePicture ? (
+                <img src={user.profile.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <User size={24} />
+              )}
             </div>
             <div>
-              <h2>Employee Portal</h2>
-              <p>My Dashboard</p>
+              <h2>{user?.profile?.firstName || user?.firstName || 'Employee'} {user?.profile?.lastName || user?.lastName || ''}</h2>
+              <p>{user?.profile?.designation || 'Employee'}</p>
             </div>
           </div>
         </div>
@@ -122,19 +126,6 @@ const EmployeeDashboard = () => {
             <Calendar size={18} />
             <span>Leave Requests</span>
           </Link>
-        </nav>
-        <div className="sidebar-divider">
-          <span>SYSTEM</span>
-        </div>
-        <nav className="sidebar-nav">
-          <a href="#" className="nav-item">
-            <Settings size={18} />
-            <span>Settings</span>
-          </a>
-          <a href="#" className="nav-item">
-            <HelpCircle size={18} />
-            <span>Support</span>
-          </a>
         </nav>
 
         {/* User Profile at Bottom */}
@@ -168,6 +159,10 @@ const EmployeeDashboard = () => {
             />
           </form>
           <div className="header-actions">
+            <button className="btn-apply-leave" onClick={() => navigate('/leave')}>
+              <Calendar size={18} />
+              Apply for Leave
+            </button>
             <button className="notification-btn" onClick={() => navigate('/leave')}>
               <Bell size={20} />
               {stats?.pendingLeaves > 0 && (

@@ -70,13 +70,26 @@ const AttendanceManagement = () => {
 
   const fetchStats = async () => {
     try {
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      let startDate: string;
+      let endDate: string;
+
+      if (viewMode === 'daily') {
+        // For daily view, use the selected date
+        startDate = selectedDate;
+        endDate = selectedDate;
+      } else if (viewMode === 'weekly') {
+        // For weekly view, use the week containing the selected date
+        startDate = getWeekStart(selectedDate);
+        endDate = getWeekEnd(selectedDate);
+      } else {
+        // For monthly view, use the month containing the selected date
+        startDate = getMonthStart(selectedDate);
+        endDate = getMonthEnd(selectedDate);
+      }
       
       const response = await attendanceService.getStats({
-        startDate: firstDay.toISOString().split('T')[0],
-        endDate: lastDay.toISOString().split('T')[0],
+        startDate,
+        endDate,
       });
       setStats(response.data.stats);
     } catch (error) {
@@ -294,10 +307,6 @@ const AttendanceManagement = () => {
             <Calendar size={18} />
             <span>Attendance</span>
           </Link>
-          <a href="#" className="nav-item">
-            <UserPlus size={18} />
-            <span>Recruitment</span>
-          </a>
           <Link to="/salary" className="nav-item">
             <DollarSign size={18} />
             <span>Payroll</span>
@@ -314,19 +323,6 @@ const AttendanceManagement = () => {
             <FileText size={18} />
             <span>Reports</span>
           </Link>
-        </nav>
-        <div className="sidebar-divider">
-          <span>SYSTEM</span>
-        </div>
-        <nav className="sidebar-nav">
-          <a href="#" className="nav-item">
-            <Settings size={18} />
-            <span>Settings</span>
-          </a>
-          <a href="#" className="nav-item">
-            <HelpCircle size={18} />
-            <span>Support</span>
-          </a>
         </nav>
         <div className="sidebar-user">
           <div className="user-info">
@@ -420,59 +416,85 @@ const AttendanceManagement = () => {
         {stats && (
           <div className="stats-summary">
             <div className="stat-card stat-present">
-              <CheckCircle size={24} />
+              <div className="stat-icon-wrapper">
+                <CheckCircle size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.present}</span>
-                <span className="stat-label">Present</span>
+                <span className="stat-label">Present Days</span>
+                <span className="stat-value">{stats.present || 0}</span>
+                <span className="stat-trend">This Month</span>
               </div>
             </div>
             <div className="stat-card stat-absent">
-              <XCircle size={24} />
+              <div className="stat-icon-wrapper">
+                <XCircle size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.absent}</span>
-                <span className="stat-label">Absent</span>
+                <span className="stat-label">Absent Days</span>
+                <span className="stat-value">{stats.absent || 0}</span>
+                <span className="stat-trend">This Month</span>
               </div>
             </div>
             <div className="stat-card stat-halfday">
-              <Clock size={24} />
+              <div className="stat-icon-wrapper">
+                <Clock size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.halfDay}</span>
-                <span className="stat-label">Half Day</span>
+                <span className="stat-label">Half Days</span>
+                <span className="stat-value">{stats.halfDay || 0}</span>
+                <span className="stat-trend">This Month</span>
               </div>
             </div>
             <div className="stat-card stat-leave">
-              <FileText size={24} />
+              <div className="stat-icon-wrapper">
+                <FileText size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.leave}</span>
                 <span className="stat-label">On Leave</span>
+                <span className="stat-value">{stats.leave || 0}</span>
+                <span className="stat-trend">This Month</span>
               </div>
             </div>
             <div className="stat-card stat-rate">
-              <TrendingUp size={24} />
+              <div className="stat-icon-wrapper">
+                <TrendingUp size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.attendanceRate}%</span>
                 <span className="stat-label">Attendance Rate</span>
+                <span className="stat-value">{stats.attendanceRate || 0}%</span>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${stats.attendanceRate || 0}%` }}></div>
+                </div>
               </div>
             </div>
             <div className="stat-card stat-hours">
-              <Clock size={24} />
+              <div className="stat-icon-wrapper">
+                <Clock size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.averageWorkHours}</span>
                 <span className="stat-label">Avg Work Hours</span>
+                <span className="stat-value">{stats.averageWorkHours || 0} hrs</span>
+                <span className="stat-trend">Per Day</span>
               </div>
             </div>
             <div className="stat-card stat-overtime">
-              <TrendingUp size={24} />
+              <div className="stat-icon-wrapper">
+                <TrendingUp size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.totalOvertimeHours}</span>
                 <span className="stat-label">Total Overtime</span>
+                <span className="stat-value">{stats.totalOvertimeHours || 0} hrs</span>
+                <span className="stat-trend">This Month</span>
               </div>
             </div>
             <div className="stat-card stat-late">
-              <AlertCircle size={24} />
+              <div className="stat-icon-wrapper">
+                <AlertCircle size={28} />
+              </div>
               <div className="stat-content">
-                <span className="stat-value">{stats.lateArrivals}</span>
                 <span className="stat-label">Late Arrivals</span>
+                <span className="stat-value">{stats.lateArrivals || 0}</span>
+                <span className="stat-trend">This Month</span>
               </div>
             </div>
           </div>

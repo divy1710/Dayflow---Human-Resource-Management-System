@@ -4,7 +4,7 @@ import { profileService, salaryService, attendanceService } from '../../services
 import type { Profile, Salary, Attendance } from '../../types';
 import { 
   User, Mail, Phone, MapPin, Calendar, Briefcase, DollarSign,
-  Edit, Save, X, FileText, Upload, Download, Trash2,
+  Edit, Save, X, FileText, Upload, Download, Trash2, Camera,
   Users, Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -21,7 +21,9 @@ const ProfilePage = () => {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pictureInputRef = useRef<HTMLInputElement>(null);
 
   const handleSignOut = async () => {
     const { signOut } = useAuthStore.getState();
@@ -167,6 +169,37 @@ const ProfilePage = () => {
     }
   };
 
+  const handlePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      const response = await profileService.uploadProfilePicture(file);
+      setProfile(response.data.profile);
+      alert('Profile picture updated successfully!');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingPicture(false);
+      if (pictureInputRef.current) {
+        pictureInputRef.current.value = '';
+      }
+    }
+  };
+
   if (loading) {
     return <div className="loading-container">Loading profile...</div>;
   }
@@ -201,10 +234,6 @@ const ProfilePage = () => {
                 <Calendar size={18} />
                 <span>Attendance</span>
               </Link>
-              <a href="#" className="nav-item">
-                <UserPlus size={18} />
-                <span>Recruitment</span>
-              </a>
               <Link to="/salary" className="nav-item">
                 <DollarSign size={18} />
                 <span>Payroll</span>
@@ -243,23 +272,6 @@ const ProfilePage = () => {
             </>
           )}
         </nav>
-        {isAdmin && (
-          <>
-            <div className="sidebar-divider">
-              <span>SYSTEM</span>
-            </div>
-            <nav className="sidebar-nav">
-              <a href="#" className="nav-item">
-                <Settings size={18} />
-                <span>Settings</span>
-              </a>
-              <a href="#" className="nav-item">
-                <HelpCircle size={18} />
-                <span>Support</span>
-              </a>
-            </nav>
-          </>
-        )}
         <div className="sidebar-user">
           <div className="user-info">
             <div className="user-avatar-small">
@@ -315,12 +327,30 @@ const ProfilePage = () => {
         {/* Profile Card */}
         <div className="profile-card">
           <div className="profile-banner">
-            <div className="profile-avatar-large">
-              {profile?.profilePicture ? (
-                <img src={profile.profilePicture} alt="Profile" />
-              ) : (
-                <span>{profile?.firstName?.[0]}{profile?.lastName?.[0]}</span>
-              )}
+            <div className="profile-avatar-container">
+              <div className="profile-avatar-large">
+                {profile?.profilePicture ? (
+                  <img src={profile.profilePicture} alt="Profile" />
+                ) : (
+                  <span>{profile?.firstName?.[0]}{profile?.lastName?.[0]}</span>
+                )}
+              </div>
+              <button 
+                className="avatar-upload-btn" 
+                onClick={() => pictureInputRef.current?.click()}
+                disabled={uploadingPicture}
+                title="Upload profile picture"
+              >
+                <Camera size={16} />
+                {uploadingPicture ? 'Uploading...' : 'Change Photo'}
+              </button>
+              <input
+                ref={pictureInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handlePictureUpload}
+                accept="image/*"
+              />
             </div>
             <div className="profile-info-header">
               <h2>{profile?.firstName} {profile?.lastName}</h2>
@@ -351,7 +381,7 @@ const ProfilePage = () => {
               </div>
               <div className="info-item">
                 <label><Calendar size={16} /> Date of Birth</label>
-                {isEditing && isAdmin ? (
+                {isEditing ? (
                   <input
                     type="date"
                     value={formData.dateOfBirth?.split('T')[0] || ''}
@@ -435,19 +465,74 @@ const ProfilePage = () => {
               </div>
               <div className="info-item">
                 <label>Department</label>
-                <p>{profile?.department || '-'}</p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.department || ''}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  />
+                ) : (
+                  <p>{profile?.department || '-'}</p>
+                )}
               </div>
               <div className="info-item">
                 <label>Designation</label>
-                <p>{profile?.designation || '-'}</p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.designation || ''}
+                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                  />
+                ) : (
+                  <p>{profile?.designation || '-'}</p>
+                )}
               </div>
               <div className="info-item">
                 <label><Calendar size={16} /> Joining Date</label>
-                <p>{formatDate(profile?.joiningDate)}</p>
+                {isEditing ? (
+                  <input
+                    type="date"
+                    value={formData.joiningDate?.split('T')[0] || ''}
+                    onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                  />
+                ) : (
+                  <p>{formatDate(profile?.joiningDate)}</p>
+                )}
+              </div>
+              <div className="info-item">
+                <label>Site</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={(formData as any).site || ''}
+                    onChange={(e) => setFormData({ ...formData, site: e.target.value } as any)}
+                  />
+                ) : (
+                  <p>{(profile as any)?.site || '-'}</p>
+                )}
               </div>
               <div className="info-item">
                 <label>Employment Type</label>
-                <p>{profile?.employmentType || '-'}</p>
+                {isEditing ? (
+                  <select
+                    value={formData.employmentType || ''}
+                    onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+                  >
+                    <option value="">Select Type</option>
+                    <option value="FULL_TIME">Full Time</option>
+                    <option value="PART_TIME">Part Time</option>
+                    <option value="CONTRACT">Contract</option>
+                    <option value="INTERN">Intern</option>
+                  </select>
+                ) : (
+                  <p>{profile?.employmentType || '-'}</p>
+                )}
+              </div>
+              <div className="info-item">
+                <label>Status</label>
+                <p className={`status-badge ${((profile as any)?.status || 'Active').toLowerCase()}`}>
+                  {(profile as any)?.status || 'Active'}
+                </p>
               </div>
             </div>
           </div>

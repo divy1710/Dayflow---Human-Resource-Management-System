@@ -1,8 +1,10 @@
 import { Response, NextFunction } from 'express';
-import { Profile } from '../models/index.js';
+import { Profile, Employee } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import mongoose from 'mongoose';
+import cloudinary from '../lib/cloudinary.js';
+import { Readable } from 'stream';
 
 export const getProfile = async (
   req: AuthRequest,
@@ -23,7 +25,21 @@ export const getProfile = async (
       throw new AppError('Profile not found', 404);
     }
 
-    res.json({ status: 'success', data: { profile } });
+    // Fetch employee data for job details
+    const employee = await Employee.findOne({ userId });
+
+    // Merge employee job details with profile
+    const profileData = {
+      ...profile.toObject(),
+      department: employee?.department || profile.department,
+      designation: employee?.designation || profile.designation,
+      joiningDate: employee?.dateOfJoining || profile.joiningDate,
+      employmentType: profile.employmentType,
+      site: employee?.site,
+      status: employee?.status,
+    };
+
+    res.json({ status: 'success', data: { profile: profileData } });
   } catch (error) {
     next(error);
   }
@@ -57,23 +73,29 @@ export const updateProfile = async (
       designation,
       joiningDate,
       employmentType,
+      site,
     } = req.body;
 
-    // Fields that employees can update
-    const employeeFields: any = { firstName, lastName, phone, address, city, state, country, zipCode, dateOfBirth };
-    
-    // Fields that only admin can update
-    const adminOnlyFields: any = { department, designation, joiningDate, employmentType };
-
-    const updateData = isAdmin 
-      ? { ...employeeFields, ...adminOnlyFields }
-      : employeeFields;
+    // Fields that all users can update in Profile
+    const updateData: any = { 
+      firstName, 
+      lastName, 
+      phone, 
+      address, 
+      city, 
+      state, 
+      country, 
+      zipCode, 
+      dateOfBirth,
+      employmentType 
+    };
 
     // Remove undefined values
     Object.keys(updateData).forEach(
       (key) => updateData[key] === undefined && delete updateData[key]
     );
 
+    // Update Profile
     const profile = await Profile.findOneAndUpdate(
       { userId },
       updateData,
@@ -84,7 +106,36 @@ export const updateProfile = async (
       throw new AppError('Profile not found', 404);
     }
 
-    res.json({ status: 'success', data: { profile } });
+    // Update Employee schema job details
+    if (department || designation || joiningDate || site) {
+      const employeeUpdateData: any = {};
+      if (department) employeeUpdateData.department = department;
+      if (designation) employeeUpdateData.designation = designation;
+      if (joiningDate) employeeUpdateData.dateOfJoining = joiningDate;
+      if (site) employeeUpdateData.site = site;
+
+      await Employee.findOneAndUpdate(
+        { userId },
+        employeeUpdateData,
+        { new: true }
+      );
+    }
+
+    // Fetch updated employee data
+    const employee = await Employee.findOne({ userId });
+
+    // Merge employee job details with profile
+    const profileData = {
+      ...profile.toObject(),
+      department: employee?.department || profile.department,
+      designation: employee?.designation || profile.designation,
+      joiningDate: employee?.dateOfJoining || profile.joiningDate,
+      employmentType: profile.employmentType,
+      site: employee?.site,
+      status: employee?.status,
+    };
+
+    res.json({ status: 'success', data: { profile: profileData } });
   } catch (error) {
     next(error);
   }
@@ -96,11 +147,38 @@ export const uploadProfilePicture = async (
   next: NextFunction
 ) => {
   try {
-    const { profilePicture } = req.body;
+    if (!req.file) {
+      throw new AppError('No file uploaded', 400);
+    }
 
+    // Upload to Cloudinary
+    const uploadStream = (buffer: Buffer): Promise<any> => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'dayflow/profiles',
+            transformation: [
+              { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+              { quality: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        
+        const readable = Readable.from(buffer);
+        readable.pipe(stream);
+      });
+    };
+
+    const result = await uploadStream(req.file.buffer);
+
+    // Update profile with new picture URL
     const profile = await Profile.findOneAndUpdate(
       { userId: req.user!.id },
-      { profilePicture },
+      { profilePicture: result.secure_url },
       { new: true }
     );
 
@@ -108,7 +186,13 @@ export const uploadProfilePicture = async (
       throw new AppError('Profile not found', 404);
     }
 
-    res.json({ status: 'success', data: { profile } });
+    res.json({ 
+      status: 'success', 
+      data: { 
+        profile,
+        imageUrl: result.secure_url 
+      } 
+    });
   } catch (error) {
     next(error);
   }
@@ -120,7 +204,11 @@ export const uploadDocument = async (
   next: NextFunction
 ) => {
   try {
-    const { name, type, url } = req.body;
+    if (!req.file) {
+      throw new AppError('No file uploaded', 400);
+    }
+
+    const { documentType } = req.body;
 
     const profile = await Profile.findOne({ userId: req.user!.id });
 
@@ -128,11 +216,34 @@ export const uploadDocument = async (
       throw new AppError('Profile not found', 404);
     }
 
+    // Upload to Cloudinary
+    const uploadStream = (buffer: Buffer): Promise<any> => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'hrms/documents',
+            resource_type: 'auto',
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        
+        const readable = Readable.from(buffer);
+        readable.pipe(stream);
+      });
+    };
+
+    const result = await uploadStream(req.file.buffer);
+
     const document = {
       _id: new mongoose.Types.ObjectId(),
-      name,
-      type,
-      url,
+      name: req.file.originalname,
+      filename: req.file.originalname,
+      type: documentType || 'GENERAL',
+      documentType: documentType || 'GENERAL',
+      url: result.secure_url,
       createdAt: new Date(),
     };
 
@@ -179,6 +290,44 @@ export const deleteDocument = async (
     await profile.save();
 
     res.json({ status: 'success', message: 'Document deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadDocument = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { documentId } = req.params;
+
+    // Find profile with the document
+    const profile = await Profile.findOne({
+      'documents._id': new mongoose.Types.ObjectId(documentId),
+    });
+
+    if (!profile) {
+      throw new AppError('Document not found', 404);
+    }
+
+    // Check authorization
+    const isAdmin = req.user!.role === 'ADMIN';
+    if (!isAdmin && profile.userId.toString() !== req.user!.id) {
+      throw new AppError('Access denied', 403);
+    }
+
+    const document = profile.documents.find(
+      (doc: any) => doc._id.toString() === documentId
+    );
+
+    if (!document) {
+      throw new AppError('Document not found', 404);
+    }
+
+    // Redirect to Cloudinary URL
+    res.redirect(document.url);
   } catch (error) {
     next(error);
   }

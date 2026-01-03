@@ -210,10 +210,6 @@ const SalaryManagement = () => {
             <Calendar size={18} />
             <span>Attendance</span>
           </Link>
-          <a href="#" className="nav-item">
-            <UserPlus size={18} />
-            <span>Recruitment</span>
-          </a>
           <Link to="/salary" className="nav-item active">
             <DollarSign size={18} />
             <span>Payroll</span>
@@ -230,19 +226,6 @@ const SalaryManagement = () => {
             <FileText size={18} />
             <span>Reports</span>
           </Link>
-        </nav>
-        <div className="sidebar-divider">
-          <span>SYSTEM</span>
-        </div>
-        <nav className="sidebar-nav">
-          <a href="#" className="nav-item">
-            <Settings size={18} />
-            <span>Settings</span>
-          </a>
-          <a href="#" className="nav-item">
-            <HelpCircle size={18} />
-            <span>Support</span>
-          </a>
         </nav>
         <div className="sidebar-user">
           <div className="user-info">

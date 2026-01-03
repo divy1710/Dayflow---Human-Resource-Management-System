@@ -190,17 +190,33 @@
   padding: 12px 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.filter-group select:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  border-color: white;
 }
 
 .filter-group select:focus {
   outline: none;
   border-color: white;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.filter-group select option {
   background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+  padding: 10px;
+  font-weight: 500;
 }
 
 /* Table */

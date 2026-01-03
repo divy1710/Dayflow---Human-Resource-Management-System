@@ -5,7 +5,7 @@ import { employeeService, leaveService, attendanceService } from '../services';
 import { 
   Users, UserPlus, Search, Bell, TrendingUp, AlertCircle,
   Briefcase, CheckCircle, Calendar, FileText, DollarSign,
-  Settings, HelpCircle, MoreHorizontal, Play, Cake, Award, LogOut
+  Settings, HelpCircle, MoreHorizontal, Play, Cake, Award, LogOut, User
 } from 'lucide-react';
 import './DashboardNew.css';
 
@@ -114,10 +114,6 @@ const Dashboard = () => {
             <Calendar size={18} />
             <span>Attendance</span>
           </Link>
-          <a href="#" className="nav-item">
-            <UserPlus size={18} />
-            <span>Recruitment</span>
-          </a>
           <Link to="/salary" className="nav-item">
             <DollarSign size={18} />
             <span>Payroll</span>
@@ -126,19 +122,14 @@ const Dashboard = () => {
             <Calendar size={18} />
             <span>Leave</span>
           </Link>
-        </nav>
-        <div className="sidebar-divider">
-          <span>SYSTEM</span>
-        </div>
-        <nav className="sidebar-nav">
-          <a href="#" className="nav-item">
-            <Settings size={18} />
-            <span>Settings</span>
-          </a>
-          <a href="#" className="nav-item">
-            <HelpCircle size={18} />
-            <span>Support</span>
-          </a>
+          <Link to="/profile" className="nav-item">
+            <User size={18} />
+            <span>Profile</span>
+          </Link>
+          <Link to="/reports" className="nav-item">
+            <FileText size={18} />
+            <span>Reports</span>
+          </Link>
         </nav>
 
         {/* User Profile at Bottom */}
