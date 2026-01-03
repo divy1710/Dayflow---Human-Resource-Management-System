@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { Attendance, Profile, User, Leave } from '../models/index.js';
+import { Attendance, Profile, User, LeaveRequest } from '../models/index.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import mongoose from 'mongoose';
@@ -256,7 +256,8 @@ export const startBreak = async (
     }
 
     if (!attendance.breaks) {
-      attendance.breaks = [];\n    }
+      attendance.breaks = [];
+    }
 
     attendance.breaks.push({
       startTime: new Date(),
@@ -574,8 +575,10 @@ export const processRegularization = async (
         
         attendance.status = attendance.workHours >= 4 ? 'PRESENT' : 'HALF_DAY';
       } else if (attendance.checkIn) {
-        attendance.status = 'HALF_DAY';\n      } else {
-        attendance.status = 'PRESENT';\n      }
+        attendance.status = 'HALF_DAY';
+      } else {
+        attendance.status = 'PRESENT';
+      }
     } else {
       attendance.status = 'ABSENT';
     }
@@ -624,7 +627,7 @@ export const markAbsentees = async (
     const attendedUserIds = existingAttendances.map(a => a.userId.toString());
 
     // Check for approved leaves
-    const approvedLeaves = await Leave.find({
+    const approvedLeaves = await LeaveRequest.find({
       status: 'APPROVED',
       startDate: { $lte: targetDate },
       endDate: { $gte: targetDate },

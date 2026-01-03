@@ -5,7 +5,8 @@ import type { Attendance } from '../../types';
 import { 
   Calendar, Clock, LogIn, LogOut as LogOutIcon, Search, Filter,
   ChevronLeft, ChevronRight, CheckCircle, XCircle, User, FileText,
-  Users, Briefcase, DollarSign, Settings, HelpCircle, UserPlus
+  Users, Briefcase, DollarSign, Settings, HelpCircle, UserPlus,
+  Coffee, Edit, AlertCircle, TrendingUp, BarChart2, Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './Attendance.css';
@@ -19,8 +20,15 @@ const AttendanceManagement = () => {
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [stats, setStats] = useState<any>(null);
+  const [onBreak, setOnBreak] = useState(false);
+  const [showRegularizationModal, setShowRegularizationModal] = useState(false);
+  const [regularizationData, setRegularizationData] = useState({ date: '', reason: '', checkIn: '', checkOut: '' });
+  const [regularizationRequests, setRegularizationRequests] = useState<Attendance[]>([]);
+  const [showRegularizationList, setShowRegularizationList] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
   const itemsPerPage = 10;
 
   const handleSignOut = async () => {
@@ -31,7 +39,11 @@ const AttendanceManagement = () => {
   useEffect(() => {
     fetchAttendance();
     fetchTodayAttendance();
-  }, [currentPage, selectedDate, viewMode]);
+    fetchStats();
+    if (isAdmin) {
+      fetchRegularizationRequests();
+    }
+  }, [currentPage, selectedDate, viewMode, filterStatus]);
 
   const fetchTodayAttendance = async () => {
     const today = new Date();
@@ -45,8 +57,41 @@ const AttendanceManagement = () => {
         new Date(a.date).toDateString() === today.toDateString()
       );
       setTodayAttendance(todayRec || null);
+      
+      // Check if on break
+      if (todayRec?.breaks) {
+        const activeBreak = todayRec.breaks.find(br => !br.endTime);
+        setOnBreak(!!activeBreak);
+      }
     } catch (error) {
       console.error('Failed to fetch today attendance:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      const response = await attendanceService.getStats({
+        startDate: firstDay.toISOString().split('T')[0],
+        endDate: lastDay.toISOString().split('T')[0],
+      });
+      setStats(response.data.stats);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const fetchRegularizationRequests = async () => {
+    try {
+      const response = await attendanceService.getRegularizationRequests({
+        status: filterStatus || undefined,
+      });
+      setRegularizationRequests(response.data.requests);
+    } catch (error) {
+      console.error('Failed to fetch regularization requests:', error);
     }
   };
 
@@ -58,8 +103,9 @@ const AttendanceManagement = () => {
           page: currentPage,
           limit: itemsPerPage,
           date: viewMode === 'daily' ? selectedDate : undefined,
-          startDate: viewMode === 'weekly' ? getWeekStart(selectedDate) : undefined,
-          endDate: viewMode === 'weekly' ? getWeekEnd(selectedDate) : undefined
+          startDate: viewMode === 'weekly' ? getWeekStart(selectedDate) : viewMode === 'monthly' ? getMonthStart(selectedDate) : undefined,
+          endDate: viewMode === 'weekly' ? getWeekEnd(selectedDate) : viewMode === 'monthly' ? getMonthEnd(selectedDate) : undefined,
+          status: filterStatus || undefined,
         });
         setAttendances(response.data.attendances);
         setTotalPages(response.data.pagination.pages);
@@ -67,8 +113,8 @@ const AttendanceManagement = () => {
         const response = await attendanceService.getMyAttendance({
           page: currentPage,
           limit: itemsPerPage,
-          startDate: viewMode === 'weekly' ? getWeekStart(selectedDate) : selectedDate,
-          endDate: viewMode === 'weekly' ? getWeekEnd(selectedDate) : selectedDate
+          startDate: viewMode === 'weekly' ? getWeekStart(selectedDate) : viewMode === 'monthly' ? getMonthStart(selectedDate) : selectedDate,
+          endDate: viewMode === 'weekly' ? getWeekEnd(selectedDate) : viewMode === 'monthly' ? getMonthEnd(selectedDate) : selectedDate,
         });
         setAttendances(response.data.attendances);
         setTotalPages(response.data.pagination.pages);
@@ -92,11 +138,23 @@ const AttendanceManagement = () => {
     return new Date(start.setDate(start.getDate() + 6)).toISOString().split('T')[0];
   };
 
+  const getMonthStart = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+  };
+
+  const getMonthEnd = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+  };
+
   const handleCheckIn = async () => {
     try {
-      await attendanceService.checkIn();
+      const response = await attendanceService.checkIn();
+      alert(response.data.message || 'Checked in successfully');
       fetchTodayAttendance();
       fetchAttendance();
+      fetchStats();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to check in');
     }
@@ -104,11 +162,70 @@ const AttendanceManagement = () => {
 
   const handleCheckOut = async () => {
     try {
-      await attendanceService.checkOut();
+      const response = await attendanceService.checkOut();
+      alert(response.data.message || 'Checked out successfully');
       fetchTodayAttendance();
       fetchAttendance();
+      fetchStats();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to check out');
+    }
+  };
+
+  const handleStartBreak = async () => {
+    try {
+      await attendanceService.startBreak();
+      setOnBreak(true);
+      fetchTodayAttendance();
+      alert('Break started');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to start break');
+    }
+  };
+
+  const handleEndBreak = async () => {
+    try {
+      await attendanceService.endBreak();
+      setOnBreak(false);
+      fetchTodayAttendance();
+      alert('Break ended');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to end break');
+    }
+  };
+
+  const handleRegularizationRequest = async () => {
+    try {
+      await attendanceService.requestRegularization(regularizationData);
+      alert('Regularization request submitted successfully');
+      setShowRegularizationModal(false);
+      setRegularizationData({ date: '', reason: '', checkIn: '', checkOut: '' });
+      fetchAttendance();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to submit regularization');
+    }
+  };
+
+  const handleProcessRegularization = async (id: string, action: 'APPROVED' | 'REJECTED') => {
+    try {
+      await attendanceService.processRegularization(id, action);
+      alert(`Regularization ${action.toLowerCase()} successfully`);
+      fetchRegularizationRequests();
+      fetchAttendance();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to process regularization');
+    }
+  };
+
+  const handleMarkAbsentees = async () => {
+    if (!confirm('Mark all employees who did not check in as absent for today?')) return;
+    
+    try {
+      const response = await attendanceService.markAbsentees();
+      alert(response.data.message || 'Absentees marked successfully');
+      fetchAttendance();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to mark absentees');
     }
   };
 
@@ -118,6 +235,9 @@ const AttendanceManagement = () => {
       case 'ABSENT': return 'status-badge status-absent';
       case 'HALF_DAY': return 'status-badge status-halfday';
       case 'LEAVE': return 'status-badge status-leave';
+      case 'PENDING': return 'status-badge status-pending';
+      case 'HOLIDAY': return 'status-badge status-holiday';
+      case 'WEEKEND': return 'status-badge status-weekend';
       default: return 'status-badge';
     }
   };
@@ -139,18 +259,12 @@ const AttendanceManagement = () => {
     });
   };
 
-  const calculateStats = () => {
-    const present = attendances.filter(a => a.status === 'PRESENT').length;
-    const absent = attendances.filter(a => a.status === 'ABSENT').length;
-    const halfDay = attendances.filter(a => a.status === 'HALF_DAY').length;
-    const leave = attendances.filter(a => a.status === 'LEAVE').length;
-    const total = attendances.length;
-    const rate = total > 0 ? ((present + halfDay * 0.5) / total * 100).toFixed(1) : '0';
-    
-    return { present, absent, halfDay, leave, total, rate };
+  const formatMinutes = (minutes?: number) => {
+    if (!minutes) return '-';
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
   };
-
-  const stats = calculateStats();
 
   return (
     <div className="attendance-container">
@@ -303,36 +417,66 @@ const AttendanceManagement = () => {
         )}
 
         {/* Stats Summary */}
-        <div className="stats-summary">
-          <div className="stat-card stat-present">
-            <CheckCircle size={24} />
-            <div className="stat-content">
-              <span className="stat-value">{stats.present}</span>
-              <span className="stat-label">Present</span>
+        {stats && (
+          <div className="stats-summary">
+            <div className="stat-card stat-present">
+              <CheckCircle size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.present}</span>
+                <span className="stat-label">Present</span>
+              </div>
+            </div>
+            <div className="stat-card stat-absent">
+              <XCircle size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.absent}</span>
+                <span className="stat-label">Absent</span>
+              </div>
+            </div>
+            <div className="stat-card stat-halfday">
+              <Clock size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.halfDay}</span>
+                <span className="stat-label">Half Day</span>
+              </div>
+            </div>
+            <div className="stat-card stat-leave">
+              <FileText size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.leave}</span>
+                <span className="stat-label">On Leave</span>
+              </div>
+            </div>
+            <div className="stat-card stat-rate">
+              <TrendingUp size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.attendanceRate}%</span>
+                <span className="stat-label">Attendance Rate</span>
+              </div>
+            </div>
+            <div className="stat-card stat-hours">
+              <Clock size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.averageWorkHours}</span>
+                <span className="stat-label">Avg Work Hours</span>
+              </div>
+            </div>
+            <div className="stat-card stat-overtime">
+              <TrendingUp size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.totalOvertimeHours}</span>
+                <span className="stat-label">Total Overtime</span>
+              </div>
+            </div>
+            <div className="stat-card stat-late">
+              <AlertCircle size={24} />
+              <div className="stat-content">
+                <span className="stat-value">{stats.lateArrivals}</span>
+                <span className="stat-label">Late Arrivals</span>
+              </div>
             </div>
           </div>
-          <div className="stat-card stat-absent">
-            <XCircle size={24} />
-            <div className="stat-content">
-              <span className="stat-value">{stats.absent}</span>
-              <span className="stat-label">Absent</span>
-            </div>
-          </div>
-          <div className="stat-card stat-halfday">
-            <Clock size={24} />
-            <div className="stat-content">
-              <span className="stat-value">{stats.halfDay}</span>
-              <span className="stat-label">Half Day</span>
-            </div>
-          </div>
-          <div className="stat-card stat-rate">
-            <Calendar size={24} />
-            <div className="stat-content">
-              <span className="stat-value">{stats.rate}%</span>
-              <span className="stat-label">Attendance Rate</span>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Filters */}
         <div className="attendance-filters">
@@ -348,6 +492,12 @@ const AttendanceManagement = () => {
               onClick={() => setViewMode('weekly')}
             >
               Weekly View
+            </button>
+            <button
+              className={viewMode === 'monthly' ? 'tab active' : 'tab'}
+              onClick={() => setViewMode('monthly')}
+            >
+              Monthly View
             </button>
           </div>
           <input

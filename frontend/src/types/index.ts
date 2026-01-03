@@ -63,7 +63,7 @@ export interface AuthResponse {
 }
 
 // Attendance types
-export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LEAVE';
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LEAVE' | 'PENDING' | 'HOLIDAY' | 'WEEKEND';
 
 export interface Attendance {
   _id: string;
@@ -73,7 +73,27 @@ export interface Attendance {
   checkOut?: string;
   status: AttendanceStatus;
   workHours?: number;
+  overtimeHours?: number;
+  lateArrival?: number;
+  earlyDeparture?: number;
+  breaks?: {
+    startTime: string;
+    endTime?: string;
+    duration?: number;
+  }[];
+  shiftStartTime?: string;
+  shiftEndTime?: string;
+  expectedWorkHours?: number;
+  isRegularized?: boolean;
+  regularizationReason?: string;
+  regularizationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedBy?: any;
+  approvedAt?: string;
   notes?: string;
+  location?: {
+    checkIn?: { latitude: number; longitude: number; address?: string };
+    checkOut?: { latitude: number; longitude: number; address?: string };
+  };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -84,6 +104,12 @@ export interface AttendanceStats {
   absent: number;
   halfDay: number;
   leave: number;
+  pending: number;
+  totalWorkHours: number;
+  totalOvertimeHours: number;
+  averageWorkHours: number;
+  lateArrivals: number;
+  earlyDepartures: number;
   attendanceRate: number;
 }
 
