@@ -45,6 +45,10 @@ const EmployeeManagement = () => {
     fetchEmployees();
   }, [pagination.page, filters, searchTerm]);
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   const fetchEmployees = async () => {
     setLoading(true);
     try {
@@ -189,33 +193,50 @@ const EmployeeManagement = () => {
             </div>
           </div>
         </div>
-        <div className="sidebar-menu-label">MAIN MENU</div>
         <nav className="sidebar-nav">
-          <a href="/dashboard" className="nav-item">
-            <Grid size={18} />
+          <Link to="/dashboard" className="nav-item">
+            <Briefcase size={18} />
             <span>Dashboard</span>
-          </a>
-          <a href="/employees" className="nav-item active">
-            <UserPlus size={18} />
+          </Link>
+          <Link to="/employees" className="nav-item active">
+            <Users size={18} />
             <span>Employees</span>
-          </a>
+          </Link>
+          <Link to="/attendance" className="nav-item">
+            <Calendar size={18} />
+            <span>Attendance</span>
+          </Link>
           <a href="#" className="nav-item">
             <UserPlus size={18} />
             <span>Recruitment</span>
           </a>
-          <a href="#" className="nav-item">
-            <List size={18} />
+          <Link to="/salary" className="nav-item">
+            <DollarSign size={18} />
             <span>Payroll</span>
-          </a>
+          </Link>
+          <Link to="/leave" className="nav-item">
+            <FileText size={18} />
+            <span>Leave</span>
+          </Link>
+          <Link to="/profile" className="nav-item">
+            <Users size={18} />
+            <span>Profile</span>
+          </Link>
+          <Link to="/reports" className="nav-item">
+            <FileText size={18} />
+            <span>Reports</span>
+          </Link>
         </nav>
-        <div className="sidebar-menu-label">ADMINISTRATION</div>
+        <div className="sidebar-divider">
+          <span>SYSTEM</span>
+        </div>
         <nav className="sidebar-nav">
           <a href="#" className="nav-item">
-            <Grid size={18} />
+            <Settings size={18} />
             <span>Settings</span>
           </a>
           <a href="#" className="nav-item">
-            <UserPlus size={18} />
+            <HelpCircle size={18} />
             <span>Support</span>
           </a>
         </nav>
@@ -227,11 +248,13 @@ const EmployeeManagement = () => {
               {user?.profile?.firstName?.charAt(0) || 'A'}
             </div>
             <div className="user-details">
-              <p className="user-name">{user?.profile?.firstName || 'Alex'} {user?.profile?.lastName || 'Morgan'}</p>
-              <p className="user-role">Admin</p>
+              <p className="user-name">{user?.profile?.firstName || 'Admin'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
             </div>
           </div>
-          <button className="expand-btn">⋮</button>
+          <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">
+            <LogOut size={18} />
+          </button>
         </div>
       </aside>
 

@@ -3,7 +3,8 @@ import { useAuthStore } from '../stores';
 import { Link } from 'react-router-dom';
 import { 
   FileText, Download, Calendar, DollarSign, Clock, Users,
-  TrendingUp, BarChart3, PieChart, Filter
+  TrendingUp, BarChart3, PieChart, Filter, Briefcase,
+  Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
 import './Reports.css';
 
@@ -12,6 +13,11 @@ const Reports = () => {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
   const [selectedReport, setSelectedReport] = useState<string>('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+
+  const handleSignOut = async () => {
+    const { signOut } = useAuthStore.getState();
+    await signOut();
+  };
 
   const reportTypes = [
     {
@@ -60,36 +66,75 @@ const Reports = () => {
         <div className="sidebar-header">
           <div className="portal-logo">
             <div className="logo-icon">
-              <BarChart3 size={24} />
+              <Users size={24} />
             </div>
             <div>
-              <h2>Reports</h2>
-              <p>Analytics & Insights</p>
+              <h2>HR Portal</h2>
+              <p>Admin Dashboard</p>
             </div>
           </div>
         </div>
         <nav className="sidebar-nav">
           <Link to="/dashboard" className="nav-item">
-            <FileText size={18} />
+            <Briefcase size={18} />
             <span>Dashboard</span>
+          </Link>
+          <Link to="/employees" className="nav-item">
+            <Users size={18} />
+            <span>Employees</span>
+          </Link>
+          <Link to="/attendance" className="nav-item">
+            <Clock size={18} />
+            <span>Attendance</span>
+          </Link>
+          <a href="#" className="nav-item">
+            <UserPlus size={18} />
+            <span>Recruitment</span>
+          </a>
+          <Link to="/salary" className="nav-item">
+            <DollarSign size={18} />
+            <span>Payroll</span>
+          </Link>
+          <Link to="/leave" className="nav-item">
+            <Calendar size={18} />
+            <span>Leave</span>
+          </Link>
+          <Link to="/profile" className="nav-item">
+            <Users size={18} />
+            <span>Profile</span>
           </Link>
           <Link to="/reports" className="nav-item active">
             <BarChart3 size={18} />
             <span>Reports</span>
           </Link>
-          {isAdmin && (
-            <>
-              <Link to="/employees" className="nav-item">
-                <Users size={18} />
-                <span>Employees</span>
-              </Link>
-              <Link to="/salary" className="nav-item">
-                <DollarSign size={18} />
-                <span>Payroll</span>
-              </Link>
-            </>
-          )}
         </nav>
+        <div className="sidebar-divider">
+          <span>SYSTEM</span>
+        </div>
+        <nav className="sidebar-nav">
+          <a href="#" className="nav-item">
+            <Settings size={18} />
+            <span>Settings</span>
+          </a>
+          <a href="#" className="nav-item">
+            <HelpCircle size={18} />
+            <span>Support</span>
+          </a>
+        </nav>
+        <div className="sidebar-user">
+          <div className="user-info">
+            <div className="user-avatar-small">
+              {user?.profile?.firstName?.charAt(0) || user?.firstName?.charAt(0) || 'A'}
+            </div>
+            <div className="user-details">
+              <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+            </div>
+          </div>
+          <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">
+            <LogOut size={18} />
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

@@ -4,7 +4,8 @@ import { profileService, salaryService } from '../../services';
 import type { Profile, Salary } from '../../types';
 import { 
   User, Mail, Phone, MapPin, Calendar, Briefcase, DollarSign,
-  Edit, Save, X, FileText, Upload, Download, Trash2
+  Edit, Save, X, FileText, Upload, Download, Trash2,
+  Users, Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './Profile.css';
@@ -16,6 +17,11 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<Partial<Profile>>({});
+
+  const handleSignOut = async () => {
+    const { signOut } = useAuthStore.getState();
+    await signOut();
+  };
 
   useEffect(() => {
     fetchProfileData();
@@ -83,11 +89,11 @@ const ProfilePage = () => {
         <div className="sidebar-header">
           <div className="portal-logo">
             <div className="logo-icon">
-              <User size={24} />
+              <Users size={24} />
             </div>
             <div>
-              <h2>My Profile</h2>
-              <p>Personal Information</p>
+              <h2>HR Portal</h2>
+              <p>Admin Dashboard</p>
             </div>
           </div>
         </div>
@@ -96,19 +102,62 @@ const ProfilePage = () => {
             <Briefcase size={18} />
             <span>Dashboard</span>
           </Link>
-          <Link to="/profile" className="nav-item active">
-            <User size={18} />
-            <span>My Profile</span>
+          <Link to="/employees" className="nav-item">
+            <Users size={18} />
+            <span>Employees</span>
           </Link>
           <Link to="/attendance" className="nav-item">
             <Calendar size={18} />
             <span>Attendance</span>
           </Link>
+          <a href="#" className="nav-item">
+            <UserPlus size={18} />
+            <span>Recruitment</span>
+          </a>
+          <Link to="/salary" className="nav-item">
+            <DollarSign size={18} />
+            <span>Payroll</span>
+          </Link>
           <Link to="/leave" className="nav-item">
             <FileText size={18} />
             <span>Leave</span>
           </Link>
+          <Link to="/profile" className="nav-item active">
+            <User size={18} />
+            <span>Profile</span>
+          </Link>
+          <Link to="/reports" className="nav-item">
+            <FileText size={18} />
+            <span>Reports</span>
+          </Link>
         </nav>
+        <div className="sidebar-divider">
+          <span>SYSTEM</span>
+        </div>
+        <nav className="sidebar-nav">
+          <a href="#" className="nav-item">
+            <Settings size={18} />
+            <span>Settings</span>
+          </a>
+          <a href="#" className="nav-item">
+            <HelpCircle size={18} />
+            <span>Support</span>
+          </a>
+        </nav>
+        <div className="sidebar-user">
+          <div className="user-info">
+            <div className="user-avatar-small">
+              {user?.profile?.firstName?.charAt(0) || user?.firstName?.charAt(0) || 'A'}
+            </div>
+            <div className="user-details">
+              <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+            </div>
+          </div>
+          <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">
+            <LogOut size={18} />
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

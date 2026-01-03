@@ -1,5 +1,5 @@
 import { useAuthStore } from '../stores';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, UserPlus, Search, Bell, TrendingUp, AlertCircle,
   Briefcase, CheckCircle, Calendar, FileText, DollarSign,
@@ -9,9 +9,21 @@ import './DashboardNew.css';
 
 const Dashboard = () => {
   const { user, signOut } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleAddEmployee = () => {
+    navigate('/employees');
+    // Trigger add employee modal after navigation
+    setTimeout(() => {
+      const addButton = document.querySelector('.btn-primary') as HTMLButtonElement;
+      if (addButton) {
+        addButton.click();
+      }
+    }, 100);
   };
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -101,7 +113,7 @@ const Dashboard = () => {
             <input type="text" placeholder="Search employees, departments..." />
           </div>
           <div className="header-actions">
-            <button className="add-employee-btn">
+            <button className="add-employee-btn" onClick={handleAddEmployee}>
               <UserPlus size={20} />
               Add Employee
             </button>

@@ -4,7 +4,8 @@ import { salaryService, userService } from '../../services';
 import type { Salary, CreateSalaryData, UpdateSalaryData } from '../../types';
 import { 
   DollarSign, Plus, X, Search, Edit, Trash2, ChevronLeft, ChevronRight,
-  User, FileText, TrendingUp, Users
+  User, FileText, TrendingUp, Users, Briefcase, Calendar,
+  Settings, HelpCircle, UserPlus, LogOut
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './Salary.css';
@@ -21,6 +22,11 @@ const SalaryManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
+
+  const handleSignOut = async () => {
+    const { signOut } = useAuthStore.getState();
+    await signOut();
+  };
 
   const [formData, setFormData] = useState<CreateSalaryData | UpdateSalaryData>({
     userId: '',
@@ -155,28 +161,75 @@ const SalaryManagement = () => {
         <div className="sidebar-header">
           <div className="portal-logo">
             <div className="logo-icon">
-              <DollarSign size={24} />
+              <Users size={24} />
             </div>
             <div>
-              <h2>Payroll</h2>
-              <p>Salary Management</p>
+              <h2>HR Portal</h2>
+              <p>Admin Dashboard</p>
             </div>
           </div>
         </div>
         <nav className="sidebar-nav">
           <Link to="/dashboard" className="nav-item">
-            <FileText size={18} />
+            <Briefcase size={18} />
             <span>Dashboard</span>
           </Link>
           <Link to="/employees" className="nav-item">
             <Users size={18} />
             <span>Employees</span>
           </Link>
+          <Link to="/attendance" className="nav-item">
+            <Calendar size={18} />
+            <span>Attendance</span>
+          </Link>
+          <a href="#" className="nav-item">
+            <UserPlus size={18} />
+            <span>Recruitment</span>
+          </a>
           <Link to="/salary" className="nav-item active">
             <DollarSign size={18} />
             <span>Payroll</span>
           </Link>
+          <Link to="/leave" className="nav-item">
+            <FileText size={18} />
+            <span>Leave</span>
+          </Link>
+          <Link to="/profile" className="nav-item">
+            <User size={18} />
+            <span>Profile</span>
+          </Link>
+          <Link to="/reports" className="nav-item">
+            <FileText size={18} />
+            <span>Reports</span>
+          </Link>
         </nav>
+        <div className="sidebar-divider">
+          <span>SYSTEM</span>
+        </div>
+        <nav className="sidebar-nav">
+          <a href="#" className="nav-item">
+            <Settings size={18} />
+            <span>Settings</span>
+          </a>
+          <a href="#" className="nav-item">
+            <HelpCircle size={18} />
+            <span>Support</span>
+          </a>
+        </nav>
+        <div className="sidebar-user">
+          <div className="user-info">
+            <div className="user-avatar-small">
+              {user?.profile?.firstName?.charAt(0) || user?.firstName?.charAt(0) || 'A'}
+            </div>
+            <div className="user-details">
+              <p className="user-name">{user?.profile?.firstName || user?.firstName || 'Admin'}</p>
+              <p className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'HR' ? 'HR Manager' : 'Employee'}</p>
+            </div>
+          </div>
+          <button className="logout-icon-btn" onClick={handleSignOut} title="Logout">
+            <LogOut size={18} />
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
