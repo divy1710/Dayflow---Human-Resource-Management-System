@@ -52,10 +52,10 @@ const Dashboard = () => {
             <UserPlus size={18} />
             <span>Recruitment</span>
           </a>
-          <a href="#" className="nav-item">
+          <Link to="/salary" className="nav-item">
             <DollarSign size={18} />
             <span>Payroll</span>
-          </a>
+          </Link>
           <Link to="/leave" className="nav-item">
             <Calendar size={18} />
             <span>Leave</span>

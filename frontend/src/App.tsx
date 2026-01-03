@@ -7,6 +7,7 @@ import EmployeeManagement from './pages/employee/EmployeeManagement';
 import LeaveManagement from './pages/leave/LeaveManagement';
 import AttendanceManagement from './pages/attendance/AttendanceManagement';
 import ProfilePage from './pages/profile/ProfilePage';
+import SalaryManagement from './pages/salary/SalaryManagement';
 import './App.css';
 
 function App() {
@@ -42,6 +43,10 @@ function App() {
         <Route 
           path="/profile" 
           element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/salary" 
+          element={isAuthenticated ? <SalaryManagement /> : <Navigate to="/login" />} 
         />
         <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
       </Routes>
